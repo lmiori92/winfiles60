@@ -1,0 +1,38 @@
+WinFile By Memory
+©2008-2010
+Data: 29/06/2010
+Versione: 1.05 beta 2
+
+Ringraziamenti:
+
+  -dav91: temi e testing
+  -eidolon: temi e testing
+  -dokkis: consigli e aiuti di sviluppo
+  -DoS: alcuni aiuti di sviluppo
+  -Snake87: testing, segnalazioni, plugins
+  -pandipo: temi
+  ...e tutti gli altri che mi hanno in qualche modo aiutato, consigliato e insegnato ;)
+
+Per segnalazioni di qualsiasi tipo, inclusi commenti, opinioni, richieste, problemi, visitare i forum!
+www.nokioteca.net
+www.forumnokia.forumfree.net
+
+Librerie / moduli usati e versione:
+
+-applist
+-AKNTEXTUTILS
+-appswitch
+-btutils 1.0
+-DriveInfo 0.3
+-exif 1.0.8
+-fileutils 0.2
+-fnmatch
+-miso 1.92
+-id3 0.6
+-m3u 1.1
+-msys 0.9.3b
+-oggtag 1.0
+-player 1.2
+-rarfile 1.0
+-sistools 1.01
+-ziptools 0.2

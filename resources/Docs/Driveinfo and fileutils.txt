@@ -1,0 +1,6 @@
+DriveInfo e fileutils by Memory
+
+Queste due librerie le ho sviluppate io. Se volete potete usarle anche in vostre applicazioni senza dover mettere nessun credito a me :) Se poi volete mettere qualcosa meglio cosi ;)
+Se volete il source code, potete chiedere sul forum www.nokioteca.net/forum
+
+These 2 libraries are written by me. You are free to use them if you want. You can find source code at www.nokioteca.net/forum, "Programmazione -> python" section, search for these libs.

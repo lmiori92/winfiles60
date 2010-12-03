@@ -1,0 +1,5 @@
+﻿Repacked by Memory.
+Il tema, mai rilasciato pubblicamente, è stato creato da eidolon.
+Io ho semplicemente riadattato il pachetto alla nuova versione di WinFile, oltre che a qualche altra modifica.
+
+Enjoy :)
