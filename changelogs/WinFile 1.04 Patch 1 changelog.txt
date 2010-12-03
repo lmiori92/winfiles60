@@ -1,0 +1,20 @@
+da fare:
+
+*Test multilingua -> Funziona come sistema: ram usata uguale; comparsa di alcuni bug dovuto alla sostituzione automatica
+*imp. reset impostaz.
+*migliorare primo avvio
+*migliorare copia file esistenti
+*sis con opzione del tipo: "Temi aggiuntivi"
+*
+
+File lingua inglese preparato il 16/06/09 - 19.37
+Sorgente WinFile adattato il 16/06/09
+
+Fix patch (1.04.2):
+
+-Tolto il bug dell'editor dei tag introdotto per caso nella 1.04
+-Richiesta di rimozione tag adattata al tema
+-Tolta dal codice (per ora) la classe di traduzione
+-Risolto bug vai a fine documento tramite menu (tramite tasto tutto ok)
+-Sistemata data nell' about (di un mese fa era smile.gif) e aggiunto pandipo nei ringraziamenti
+-Tasto ok in rapporto pulizia ram

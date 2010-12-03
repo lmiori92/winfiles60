@@ -1,1 +1,0 @@
-No change are required for pys60 based on python 2.5. Removed locale module issue on python 2.2

@@ -1,0 +1,98 @@
+Da testare molto la classe info_box a seguito dei molti cambiamenti:
+-sistemate e uniformate cose legate alla codifica
+-Tolte molte stringhe da language()
+-alcune variabili inutilizzate tolte
+-Se un file, cartella o disco non è accessibile viene riportato
+-scan_dir_info integrato nella classe info_box
+-testare con nomi file e estensioni non ascii
+
+Controllare bene tutto il programma in generale, moltissimi miglioramenti e ottimizzazioni
+
+Ho aggiunto una progress bar nel caricamento del tema: ora bisogna fare in modo che se avvengono errori, non si blocchi tutto...
+Magari evitare la visualizzazione della barra durante il normale avvio...solo quando si carica un tema dal menu temi.
+
+Modificata la funzione ui.shutdown_effect: cambiati i paramteri e migliorata la sua funzionalità.
+
+ui.shutdown_effect([step=-10,fr=0,to=100]) #Crea l'effetto di uscita della schermata attuale sul canvas
+#Step definisce la velocità [1-100] 1 molto lento; 100 immediato. Se positiva si avrà dissolvenza sul bianco; negativa sul nero.
+#fr definisce da che percentuale partire
+#to definisce la percentuale di fine
+#L'uscita di WinFile richiama la funzione così com'è mentre la chiusura di un' immagine: ui.shutdown_effect(-20) (+ veloce)
+
+da fare:
+
+*Test multilingua -> Funziona come sistema: ram usata uguale; comparsa di alcuni bug dovuto alla sostituzione automatica
+*imp. reset impostaz.
+*migliorare primo avvio
+*migliorare copia file esistenti
+*Perdendo il focus controlla che non siano stati modificati dei file
+*Visualizzare l'icona (o anteprima di foto e video) nelle informazioni
+
+1.05
+
+-Ripristinata la compatibilità totale di alcune parti del programma su 6630/80 e altri
+-Moltissimi aggiustamenti al codice, ottimizzazioni e rinforzamenti. Rimosse moltissime cose inutili al fine di rendere leggero il codice
+-Aggiunte e sistemate alcune estensioni nella categoria audio
+-Mask temi convertite in modo appropriato (by Snake87) per funzionare su 6600 e risparmiare spazio
+-Spazio necessario per l'installazione diminuito
+-Alcuni plugin aggiornati
+-Aggiunto plugin per apertura/estrazione file di backup .arc
+-Aggiunto plugin per l'apertura di immagini .ota (b/n) by Snake
+-Plugin compilati per prestazioni migliori: i sorgenti sono compressi in Plugins\FileOpen_sources.zip
+-Font normalizzato in titolo listbox: quando taglia del testo non cambia font (se si usa un font personalizzato) e sistemato il taglio
+-draw della progress_bar velocizzato, alcuni calcoli precaricati (al di fuori di draw)
+-Plugin vcf ottimizzato e alcuni bug fix
+-Alcune informazioni di sistema aggiunte (versione S60 e versione python installata)
+-Menu tasks riordinato
+-funzioni sizetostr,getdate, gethour della classe data_formatter ottimizzate (da 8 a 1 linea di codice!Usando le formattazioni delle stringhe)
+-Eticchetta sinistra in Apri Con sistemata
+-Alcuni piccoli aggiustamenti del visualizzatore immagini
+-Ora non è più possibile selezionare elementi nei processi, tasks e root
+-Menu migliorato
+-Visualizzatore testi migliorato; se si cerca una parola ora il testo viene spostato sulla parola trovata e non più solo sulla linea
+
+**Tutti i plugin sono stati rivisti e ottimizzati**
+
+SKN: - codice pulito e codice inutile tolto (funz: restore inutile, in molti plugin, tolta)
+     - bugfix riguardo alla lettura UID
+     - file aggiornati per visualizzare il file di backup creato (se rinominato)
+     - Finestre di fine processo (o errore) senza timeout
+
+VCF:
+     - riscritto il parser
+     - più accurato e molti bug rimossi
+     - se il contatto ha un immagine associata, la visualizza in icona
+     - premendo il tasto centrale su un contatto vengono visualizzati ulteriori dettagli: nomi, numeri, email e siti web
+
+SIS:
+     - sistemato e ripulito il codice completamente
+     - molti bug riguardo all' esplorazione eliminati
+     - pieno supporto per i nomi con caratteri non ascii
+     - estrazione riscritta
+
+controllare bug eliminazione in cartella fileopen di nuova cartella\nuova cartella in landscape
+dare occhiata a infobox, soprattutto i global che non servono
+
+provare a velocizzare i tasti: ovvero provare a tolgiere roba inutile nelle funzioni ui.cb_capture e getfk. Guardare anche key_cb
+Snellire quella parte, magari togliere l'uso della classe FKey
+
+Abbozzata funzione reset (non funzionale)
+
+Togliere funzione language nel player audio
+
+mod info_box
+
+-tolti global inutili v
+-ms_to_hh_mm improved v
+-get_op improved v
+-get_system_info v
+-sys info check
+-
+
+
+
+-Comparsa popup informazione / conferma con effetto dissolvenza: ho già fatto alcune prove e viene carino...
+-Modificare la tavolozza dei colori e renderla più potente, con slide per cambiare i colori (ho preso l'idea (e perché no forse anche il codice smile.gif) da Image Designer, in python)
+-Visualizzatore esadecimale (incorporato a quello testuale; magari con un tasto tipo Notepad++)
+-Migliorare la gestione dei temi da un punto di vista del codice: soprattutto fare in modo che mentre carica il tema rimanga bloccata una schermata caricamento in corso (magari anche con una barra di avanzamento)
+-Potenziare plugin vcf: import/export dalla rubrica, eliminazione, aggiunta

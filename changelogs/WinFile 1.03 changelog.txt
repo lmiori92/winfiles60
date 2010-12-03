@@ -1,0 +1,72 @@
+All'avvio per la prima volta, dovrebbe venire fuori un messaggio con scritto "Settings error". Non vi spaventate : le vostre vecchie impostazioni le carica comunque e dal secondo avvio non succede più niente!
+
+Da fare nella prossima versione:
+	-Velocizzare il processo di scansione dei file
+	-Aggiungere l'ordine dei files per: nome, data, dimensione, estensione...(già fatta la lib c++ per questo)
+	-Aggiungere alle funzioni sul menu l'indicazione dei tasto rapido associato
+
+* Aggiungere:
+- Se un file si copia nella stessa directory creare un file di nome NomeFile(2).Estensione
+- Quando si guardano le info di un file txt visualizzare anche N Caratteri, N Parole, N Righe
+
+* Aggiungere
+- Memorizzazione della posizione nei file aperti con il visualizzatore testuale, in questo modo se si chiude un file txt si può aprirlo e ritrovarlo nello stesso punto di quando si è chiuso.
+
+In facimento/da fare:
+	-Aggiungere Vai a... (directory) in situazioni come i file ricevuti, file cercati, app.java and so on!
+
+* Bugs conosciuti:
+
+	-Se il tema nelle impostazioni è differente da quello nella cartella temporanea, carica quello nella cartella temporanea
+	-Se si imposta il tasto destro come indietro, anche li bisogna collegare la funzione stop_plugin
+
+* Bug fix e aggiustamenti (correzzione problemi):
+
+	-Codice ulteriormente ripulito da cose inutili e variabili inutilizzate
+	-Scorrimento menu rinnovato: ora non esce più dallo schermo
+	-Librerie mancanti aggiunte; alcune librerie aggiornate
+	-Bug fix: se prima non si entrava almeno una volta nella root, era impossibile effettuare operazioni in cartelle vuote
+	-Se si cambia il tema o in generale c'è una cosa che richiama il refresh della grafica, ora funziona anche nei file ricevuti
+	-Svariati bug fix riguardo a stringhe accentate
+	-La funzione della copia dei file è stata completamente riscritta ->Per ora va bene la copia semplice (senza richieste di sovrascrittura o altro)
+	-Bug fix: ora lo spostamento dei file funziona a dovere in tutte le situazioni
+	-Tolto bug nel lettore audio che non permetteva l'uscita in caso di errore (fade out audio)
+	-Ora le tabulazioni dei file di testo vengono convertiti in 4 spazi, cosi non si vedono i quadratini
+	-Rinforzata la lettura del file manifest nei file Java
+	-Tolta la scritta "Attributi:" se l'elemento non ha attributi
+	-Ora le informazioni su un immagine vengono visualizzate anche se presenta accenti nel percorso
+	-Ora i task e i processi non si bloccano se hanno a che fare con nomi accentati
+	-Bug corretto: Se viene aperto un documento, con Adatta a schermo : no, ci si sposta verso destra con le frecce, e poi si mette adatta a schermo: si, si vede solo una parte del testo, quella a sinistra è mancante.
+	-La copia dei file può ora avvenire anche in background, senza che al passaggio ad un'altra applicazione blocchi il telefono
+	-Ora il programma esce correttamente se si trova in una cartella vuota
+	-Ora il programma cancella anche file con attributo "sola lettura" impostato
+	-Alcune correzzioni testuali e rimosse alcune stringhe non usate dal sorgente
+	-Sistemato il supporto playlist: ora alla chiusura viene selezionato il file della playlist e altre ottimizzazzioni
+	-Risolti tutti i bug legati allo scorrimento del testo in visualizzatore testi, ottimizzate alcune funzioni
+	-Velocizzata la scansione della directory, tolto lo scurimento di file nascosti e implementati accorgimenti da http://wiki.python.org/moin/PythonSpeed/PerformanceTips nelle funzioni di scan
+	-Velocizzata la ricerca dei files, la scansione dei file Java, dei file ricevuti
+	-Gravissimo bug fixato nella funzione to_unicode. Ora funziona al 100%
+	-Aggiunto il menu invia, il menu file (ridotto) e il tasto verde per l'invio in file ricevuti
+	-Risolti tutti i problemi di conteggio in Vai a linea
+	-Se alla richiesta di informazioni avviene un errore oppure l'oggetto non ha proprietà, non rimane più bloccata la scritta "Ricerca informazioni"
+	-Applicando un tema, viene visualizzato "Caricamento tema in corso"
+	-Se non esiste la cartella Skin al momento dell'installazione di un tema in avvio, la crea
+	-Tolti alcuni bug nell' installazione di un (se non ci sono temi) all'avvio di un tema
+	-Se il programma non trova temi, drive pieni o altro appare un messaggio
+	-La durata dei file audio dovrebbe ora sempre essere visualizzata correttamente nelle informazioni
+	-Alcuni bug non gravi risolti nella lettura del file ini del tema
+	-Al caricamento di un tema da menu, viene prima svuotata la cartella temporanea cosi se mancano immagini il programma avvisa
+
+* Funzionalità aggiunte:
+
+	-Tavolozza colori migliorata: sistemata la posizione dell'anteprima e aggiunta la possibilità di inserire R,G,B
+	-Supporto PLUGINS (estensioni) per la gestione di tipi di file!
+	-Aggiunti, tramite plugin, gestore archivi zip e visualizzatore v-card (.vcf)!
+	-Aggiunte alle informazioni dei file anche quelle degli archivi rar e zip (numero files, cartelle e dimensione reale non compressa)
+	-Introdotte le info firmware nelle info di sistema (le leggeva già ma mi dimenticavo di sommarle alla lista...)
+	-Migliorata la visualizzazione dei dettagli dei file Java: ora ci sono le categorie (Nome, Produttore, Versione, Descrizione e piattaforma)
+	-Aggiunte al metodo apri internamente anche le estensioni: ".xml",".htm",".html",".csv" (vis. testuale)
+	-Se si è in una cartella vuota, viene visualizzato un messaggio del tipo "La cartella <Nome Percorso Completo> non contiene elementi"
+	-Ora si possono impostare gli attributi a file e cartelle, anche tramite la multiselezione, e viene richiesto (se nella selezione di uno o più elementi è presente una cartella) di applicare anche alle sottocartelle. Funzionalità da testare ma sembra che si comporti bene anche con accenti. Quando la parte "che deve funzionare", funziona ed è testata, magari adatto alla grafica del programma la richiesta degli attributi
+	-In root viene visualizzato il nome della memory card
+	-Lista applicazioni (da aggiungere) in Apri con in ordine alfabetico

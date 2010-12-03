@@ -1,0 +1,33 @@
+All'avvio per la prima volta, dovrebbe venire fuori un messaggio con scritto "Settings error". Non vi spaventate : le vostre vecchie impostazioni le carica comunque e dal secondo avvio non succede più niente!
+
+Da fare nella prossima versione:
+	-Velocizzare il processo di scansione dei file
+	-Aggiungere l'ordine dei files per: nome, data, dimensione, estensione...(già fatta la lib c++ per questo)
+	-Ampliare la modifica degli attributi: se è una cartella, chiedi di applicare a tutto, abilita la multiselezione...
+	-Aggiungere alle info di sistema anche le info di localizzazione, migliorare gestione errori
+	-Aggiungere alle funzioni sul menu l'indicazione dei tasto rapido associato
+
+* Bug:
+- Nel miniplayer se mentre la canzone è in play si torna indietro premendo una volta il joystick verso sinistra ed il tempo della canzone è compreso tra 0 e 5 secondi il play della canzone si blocca e non è più possibile farlo riprendere, e se si preme il tasto ok destro (indietro) la schermata diventa bianca (questo solo alcune volte, nn ho capito perchè), e per far refreshare lo schermo bisogna premere un tasto.
+- se ci si posiziona in una cartella, e si cancella un file tramite altro programma, quando si ritorna in winfile il file resta nella lista.
+
+* Aggiungere:
+- Se un file si copia nella stessa directory creare un file di nome NomeFile(2).Estensione
+- Possibilita di cambiare azione ai tasti premuti (esempio il tasto 1 incolla invece che copia ecc...
+- Nella visualizzazione del testo, sarebbe più comodo avere lo sfondo e il colore del testo modificabile a scelta dall'utente direttamente dal txtreader.
+- Quando si guardano le info di un file txt visualizzare anche N Caratteri, N Parole, N Righe
+- aggiungere l'help nel miniplayer che spiega la funzione di tutti i tasti.
+
+Fatto:
+	-Risolto grave bug introdotto nella 1.01: ora gli accenti si visualizzano correttamente!
+	-Ora l'impostazione degli attributi viene eseguita correttamente anche su file accentati
+	-Vai a riga... in visualizzatore testi sistemato
+	-Titolo visualizzatore testi sistemato
+	-Bug file accentati in visualizzatore testo risolti completamente (es: alla chiusura non veniva selezionato il file)
+	-Se si apre un file python (.py) con il metodo "Apri internamente" viene ora visualizzato
+	-Aggiunta in "Utilità" la funzione "App. Java" che fornisce un elenco delle applicazioni installate nel telefono, pronte per l'invio, la copia ecc...
+	-Problema risolto nella ricerca dei file: se si entra in una cartella non fa più errore
+
+Da fare assolutamente nelle prossime versioni:
+	-Sistemare la classe info_box (delle informazioni dei file) perchè non è ottimizzata e ha punti deboli in caso di accenti
+	-Rinnovare completamente la copia dei file (ha molti punti deboli; problemi con file accentati; non chiede la sovrascrittura...)

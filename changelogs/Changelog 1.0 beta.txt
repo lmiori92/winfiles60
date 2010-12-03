@@ -1,0 +1,153 @@
+Start: 10/08
+End: 
+11/01/09 -> +90% dell'applicazione finita
+
+Language: Italian
+
+Inanzitutto un grazie ai miei grafici, ai beta tester, ai membri del forum e a tutte le persone che usano o hanno provato WinFile!
+dav91
+dokkis
+DoS
+giuppe
+eidolon
+
+###########################################################################################
+Da fare nelle prossime versioni (che saranno rilasciate molto più a breve :) ):
+###########################################################################################
+
+	-Reintrodurre anteprima video-immagini in icona
+	-Multilingua (sistema per la gestione già pronto)
+	-Ottimizzare ulteriormente il codice e ripulirlo ad esempio nelle informazioni file, rinominare alcune funzioni nei vari visualizzatori.
+	-Ordine files migliorato e velocizzato tramite estensione C++: ordine per nome, data, grandezza, estensione...velocissima grazie al c++. Ho già una libreria pronta ma devo testarla ancora bene.
+	-Possibilità musica in background mentre si lavora con il file manager.
+	-Plugins: visualizzatore file zip, vcf... (già in parte sviluppati, ma devo ancora pensare al metodo più efficace per gestirli)
+	-Migliorare l'operazione di copia e incolla: richieste come "Sovrrascrivere? Singolo, tutti, tralascia"; migliorare la visualizzazione dei file in copia (es: se si copia una cartella con tanti file, si vedrà a schermo solo "Copia file in corso (1 di 1) "nome cartella" come titolo e la barra di avanzamento già piena come se avesse finito)
+	-Operazione cancella: possibilità di cancellare anche file di sola lettura (con richiesta singolo, tutti, tralascia)
+	-Risolvere bug Apri Con... ( a chi non funziona: mi servite come tester! :) )
+	-Togliere la possibilità di cambiare orientamento quando è attiva una conferma, una barra di stato o un note (metodo interno, magari: ui.switch_mode=0); altrimenti viene fuori un casino!
+	-Selezione continua: tenendo il tasto di selezione premuto e il tasto giù per esempio, si devono selezionare tutti i file.
+	-Cambiare formato proprietà tema
+	-Possibilità di dimezzare la dimensione delle icone (da 5 elementi per pag a 10!)
+	-Port al 3rd edition! Quando le versioni 2nd saranno stabili
+	-Pagine preferiti, accesso veloce a file ricevuti
+	-Aggiungere all'UI (interfaccia utente) interno anche un menu di selezione per piccole cose.
+	-Sarebbe interessante un visualizzatore esadecimale e un editor testi semplice
+
+##############################################
+Cambiamenti e problemi risolti della 1.0 (beta)
+##############################################
+
+Introduzione:
+
+Prima dell'installazione di questa versione, si consiglia la rimozione completa della precente versione.
+Anche un'eliminazione della cartella WinFile in system\apps è consigliata per rimuovere ogni traccia della vecchia versione.
+Questo per rimuovere tutto e per fare pulizia dalle cose inutili: tutte le cose nella nuova versione sono state cambiate e i temi e le impostazioni vecchie non saranno più utilizzabili.
+Questa versione è una "rivoluzione" dalla 0.5; sono state apportate numerosissime modifiche, risolti moltissimi problemi e aggiunte un'infinità di nuove funzioni!
+In una parola: Provatelo!
+
+Bug e problemi conosciuti in attesa di soluzione:
+    -Sistemare gli orari: l'ora del file è sempre 2 ore indietro rispetto al normale; sicuramente c'entra il fuso orario.
+        Si potrebbe fare che all'avvio controlla l'orario di creazione di un file ad esempio in D:\ e confornta con l'ora attuale, fa la sottrazione e ricava la differenza oraria da applicare poi a una variabile es: s.diff_orario
+    -Se si utilizza la matita per cambiare l'orientamento durante la visualizzazione di un pop-up (ad esempio quello di conferma eliminazione o durante l'invio dei files), alla sua chiusura la schermata sarà 'stravolta'
+        Risolto nella prossima versione
+    -Le etichette dei softkeys possono assumere "infiniti" caratteri e andare fuori dallo schermo: bisogna fare funzione di taglio tipo "Posiz..."
+    -La grafica è imperfetta in alcune parti.
+        La prossima versione sarà interamente dedicata al restauro grafico (mi sono già messo d'accordo con dav_91)
+    -Impostando un tema, all'uscita nel filemanager bisogna cambiare cartella per aggiornare le icone e mentre il tema si sta caricando è possibile usare il programma
+
+Generale:
+	-L'installazione richiede molto meno spazio su disco
+	-Rinnovata la libreria per gestire il bluetooth; ora funziona a dovere
+	-Icona programma cambiata, aggiornati e rivisti i temi dal grande dav91 ;) (per ora solo 2 temi inclusi)
+	-Codice ripulito, riscritto in parte e ottimizzato.
+	-Alcune mie librerie* utilizzate dal programma riscritte, corrette o ottimizzate
+	-Possibilità landscape in quasi tutte le finestre del programma.Tre modalità di visualizzazione cambiabili tramite tasto matita.
+	-Menu default di sistema tolto ed aggiornato con quello interno in tutte le finestre.
+	-Richieste e messaggi a schermo completamente basati sul tema interno e migliorati. Solo dove c'è da inserire un testo o numero c'è ancora la "grafica" (UI) di sistema.
+	-Risolti in generale gravi bug di visualizzazione ad esempio nei file cercati o file ricevuti. (il motivo non l'ho capito ma riscrivendo questa versione si è risolto ;) )
+	-In molti casi è stato aggiunto (migliorato) il pieno supporto ai caratteri utf8,unicode per lettere accentate, simboli particolari ecc..Anche dove presumo non serve ma non si sa mai ;)
+	-Sistema impostazioni completamente rinnovato e più stabile
+	-Eccezzione in caso di assenza di temi gestita, con possibilità di installazione diretta dai file ricevuti (come Gestione->Installa in Temi)
+
+Personalizzazione:
+	-Se un tema non viene trovato o è danneggiato all'avvio, il programma cerca altri temi e se non li trova avvisa e si chiude
+	-Tolta la possibilità di cambiare l'etichetta ai file ricevuti (cambiabile dal file di lingua)
+	-Possono essere impostati da programma anche i colori di etichette e titolo, oltre che al testo.
+	-Si possono caricare parzialmente i temi: ovvero caricare solo alcuni elementi come icone, sfondi e colori. Si possono così fare abbinamenti tra più temi!
+
+Filemanager:
+	-Navigazione e scorrimento più fluidi
+	-Fix interni al motore del file browser.
+	-Icon fix: operativa ora l'icona delle pagine internet salvate.
+	-Icon fix: aggiunte estensioni a visualizzatore testo: .m, .mm, .log
+	-Estensioni riviste e aggiunte: .mxmf (audio midi/proprietario)
+	-Estensioni Open Document (Open Office) aggiunte ai documenti
+	-Risolto bug apertura .mp4
+	-Installazione applicazioni (.sis,.jar) ora aperti in modo migliore: mentre si installa si può ora continuare ad utilizzare WinFile.
+	-Ricerca files e sezione File Ricevuti migliorata e aprendo un visualizzatore, scorrendo i files, si trovano solo quelli trovati e non quelli all'interno della directory del file aperto per primo.
+	-Visualizzazione task migliorata, crash dovuto alla ricerca dell'uid tramite libreria applist risolto.
+	-Invio files via bluetooth migliorato, tolta la selezione del servizio (inutile) e possibilità di annullare il trasferimento.
+	-Ricerca file ricevuti leggermente velocizzata.
+	-Ritornando alla root del programma da una sezione come file ricevuti, processi ecc..., la selezione si posiziona sull'elemento giusto e non all'inizio.
+	-HotKey aggiunto: tasto verde (chiamata) invia file, cartelle e file selezionati.
+	-Ottimizzata la selezione dei file (o elementi)
+	-Sistemate tutte le operazioni sui files; rese più "fluide" da utilizzare e corretti alcuni bug
+
+Gestione processi e task:
+	-Tolte informazioni inutili o sbagliate come priorità.
+	-Tolto '*' alla fine del nome di un processo durante la richiesta di terminarlo.
+	-UID task cercato a partire dal processo, così non ci dovrebbero essere più problemi su alcuni sistemi.
+	-Velocizzata la ricerca dei task (cambiata la ricerca uid)
+
+Informazioni file, cartelle, dischi e sistema:
+	-Visualizzazione alcuni elementi (attributi file e dischi, ...) migliorata
+	-Lettura e modifica TAG ID3 migliorata. Sistemata la richiesta di salvataggio tag, in caso di errore di scrittura non si blocca l'intero programma.
+	-Risolti alcuni bug non gravi
+	-Informazioni di sistema: risolto il problema di informazioni doppie dopo aver aggiornato le informazioni.
+	NON RISOLTO-Risolto bug visualizzazione orario: l'orario di modifica è sempre 1-2 ore indietro rispetto all'orario reale.
+	
+Visualizzatore immagini:
+	-Zoom implementato (con scorrimento se immagine più grande dello schermo)
+	-Migliorato in generale, tasti più fluidi
+	-Bug risolto: scorrendo le immagini poteva capitare di riempire la ram o comunque riempirla in modo inutile.
+	-Bug risolto: ordine immagini come ordine visualizzato nel filemanager (data, grandezza...)
+	-Piccoli bug risolti e menu rinnovato
+	-Aggiunta la visualizzazione di informazioni aggiuntive sulle proprietà immagine
+
+Apri con...:
+	NON RISOLTO-Bug risolto: su certe configurazioni software, il programma crasha appena si tenta di aggiungere un'applicazione.
+	-Bug risolto: ora tutte le applicazioni dovrebbero funzionare con l'apri con
+
+Riprodutture audio:
+	-Migliorata la visualizzazione dei tag (mp3,ogg)
+	-Lettura lyrics (.lrc) il testo della canzone associato!!
+	-Modalità ripetizione e casuale
+	-Tempo di riavvolgimento/avanzamento percentuale alla durata del file stesso.
+	-Bug risolto: se si tenta di riavvolgere/avanzare il file audio mentre è in pausa, ora non succede niente.
+	-Apertura playlist (m3u e pyl)
+	-Creazione di playlist (m3u)
+	-Piccoli bug risolti, tolta la visualizzazione di alcuni tag (si possono vedere comunque nelle informazioni generali del file mp3)
+
+Visualizzatore testi:
+	-Bug risolto: se la parola ricercata è nell'ultima riga, si incasina tutto.
+	-Bug risolto: se "Vai a linea" in testo più corto dello schermo, si incasina tutto.
+	-Bug risolto: "Vai a linea" rispetta il numero reale delle linee, ovvero a partire da 1 e non da 0
+	-Visualizzazione adattata allo schermo nettamente migliorata (prestazioni & correttezza)
+	-Riconoscimento file di testo UTF-8: se il file contiene l'intestazione dell'UTF-8 (es. mshell salva cosi), lo apre in maniera corretta.
+	-La parola ricercata viene salvata per un utilizzo futuro.
+	-Altri bug fixes e ritocchi minori come: tolta scritta "Unicode" o "Non unicode"...l'avevo usata un tempo in costruzione ed ora non ha senso tenerla :)
+
+*m3u,id3,sistools,player,oggtag
+
+Qualsiasi commento, problema, idea, oppure crash riportare a me sul forum o tramite un messaggio. Tutti i vostri commenti, suggerimenti e segnalazioni sono importanti!
+Controllare anche la sezione bug conosciuti per evitare doppie segnalazioni.
+Grazie per la vostra collaborazione :)
+
+© 2007-2009 Memory. All rights reserved.
+
+coord=[]
+def f(arg):
+    global coord
+    coord+=[(arg,y) for y in xrange(50)]
+
+coord+=[ f( x ) for x in xrange(100)]

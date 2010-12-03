@@ -1,0 +1,27 @@
+Generale
+
+[- lingua programma default inglese]
+- traduzioni migliorate, aggiunto tedesco
+- caricamento lingua compilata migliorato: più informazioni se avviene un'errore
+- tutto l'output debug del programma viene anche scritto su file (D:\Winfile_debug.log), fin dalla prima istruzione di avvio
+
+Grafica
+
+- "nuovo" font definito, testare con fountrouter
+- funzioni grafiche sistemate, font può essere anche None
+
+Explorer
+
+- bugfix: grave bug risolto, percorsi file ora sempre corretti come in precedenza
+- ricerca files velocizzata
+- bugfix: se nei file trovati compare una cartella, è ora possibile aprirla normalmente
+
+Gestione file
+
+- funzione removedirs accetta parametro subdirs: se 1 cancella anche le sottocartelle, se 0 solo primo livello.
+- iniziato a ottimizzare alcune funzioni
+- bugfix: impostazione attributi ora funzionante con caratteri speciali
+
+Player audio
+
+- possibilità di ascoltare la musica anche mentre si lavora sui files! (beta)

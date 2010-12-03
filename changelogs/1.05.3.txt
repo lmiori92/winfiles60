@@ -1,0 +1,59 @@
+Da verificare:
+
+- scritta caricamento in landscape
+
+
+Da fare:
+
+- se bt spento, accenderlo per l'invio e poi rispegnerlo
+- Se si imposta il tasto destro come indietro, anche li bisogna collegare la funzione stop_plugin
+
+
+Generale
+
+- aggiunta opzione per tenere accesa la retroilluminazione del display
+- bugfix: alcune stringhe inglesi corrette; file di lingua aggiornato
+- alcune migliorie visuali
+- ulteriori migliorie delle prestazioni, scorrevolezza aumentata in generale
+
+Esploratore file e altre risorse
+
+- funzione di rimozione file migliorata in senso di visualizzazione: ora se ha cancellato tutto, non dice errori 0. Se non cancella qualcosa, invece, scrive gli elementi non rimossi
+- classe gestione file riordinata e ripulita da codice inutile
+
+Informazioni file - sistema - avanzate
+
+- aggiunto uid nelle info di un file aif
+- aggiunto numero righe, parole e lettere nei file txt
+- 
+
+Player audio
+
+- bugfix: lettura lyrics ripristinata
+- supporto a tasti dedicati per il controllo volume (vedi: Known Issues, Problemi noti)
+
+Immagini
+
+- piccole ottimizzazioni
+- scritta "Caricamento..." migliorata
+
+Plugins
+
+- aggiornati alcuni plugins: mbm, aif, gif
+
+Utilità sistema
+
+- alcune migliorie report applicazioni installate: ordine alfabetico e spaziatura intestazione
+
+Temi
+
+- aggiunta informazione tema in uso a lato del nome
+
+
+############
+Problemi noti
+Known Issues
+############
+
+- il volume si può controllare anche tramite i tasti dedicati, ma questi tasti devono essere premuti contemporaneamente. Per abbassare, per esempio, bisogna premere + e tenendolo premuto -. Il perchè lo sa solo la Nokia :)
+- 

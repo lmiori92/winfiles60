@@ -1,0 +1,23 @@
+All'avvio per la prima volta, dovrebbe venire fuori un messaggio con scritto "Settings error". Non vi spaventate : le vostre vecchie impostazioni le carica comunque e dal secondo avvio non succede più niente!
+
+Fatto:
+	-Impostazione per cancellare lo skin estratto in memoria (D:\) alla chiusura
+	-Togliendo la visualizzazione della dimensione, ogni drive ha solo nome "Errore visualizzazione"
+	-Apri con: se si annulla l'inserimento dell'estensione non diventa None; nomi applicazioni visibili
+	-Apri con: aggiunto inserimento manuale per chi ha problemi con la lista delle applicazioni (crash o inesistente)
+	-Dopo le impostazioni o il cambio di tema, ora vengono aggiornate correttamente le opzioni di visualizzazione e le icone
+	-Ora tutte le estensioni funzionano con l'apri con a parte .app e .exe. Si può ora impostare Sisboom come visualizzatore sis
+	-Dopo l'apertura dell'about, se si apre un file di testo sarà adattato allo schermo e non segue l'impostazione precedente
+	-Font omogeneo in visualizzatore testi/about/altre schermate di info: in landscape il font utilizzato per il testo era diverso da quello normale...
+	-Il nome se più lungo dello spazio disponibile, non sovrascrive più la barra. (la barra viene disegnata dopo)
+	-Ora non è più possibile cambiare orientamento quando è attivo un pop-up (richiesta, nota...)
+	-Modifica attributi file. Esperimento: funziona solo su singoli file o cartella (solo cartella e non file interni). Sembra che funziona bene...
+	-L'icona dei file nascosti viene scurita!
+
+
+Da fare nella prossima versione:
+	-Velocizzare il processo di scansione dei file
+	-Aggiungere l'ordine dei files per: nome, data, dimensione, estensione...(già fatta la lib c++ per questo)
+	-Ampliare la modifica degli attributi: se è una cartella, chiedi di applicare a tutto, abilita la multiselezione...
+	-Aggiungere alle info di sistema anche le info di localizzazione, migliorare gestione errori
+	-Aggiungere alle funzioni sul menu l'indicazione dei tasto rapido associato

@@ -1,0 +1,210 @@
+All'avvio per la prima volta, dovrebbe venire fuori un messaggio con scritto "Settings error". Non vi spaventate : le vostre vecchie impostazioni le carica comunque e dal secondo avvio non succede più niente!
+
+Da fare nella prossima versione:
+	-Velocizzare il processo di scansione dei file
+	-Aggiungere l'ordine dei files per: nome, data, dimensione, estensione...(già fatta la lib c++ per questo)
+	-Aggiungere alle funzioni sul menu l'indicazione dei tasto rapido associato
+
+* Aggiungere:
+- Se un file si copia nella stessa directory creare un file di nome NomeFile(2).Estensione
+- Quando si guardano le info di un file txt visualizzare anche N Caratteri, N Parole, N Righe
+
+* Aggiungere
+- Memorizzazione della posizione nei file aperti con il visualizzatore testuale, in questo modo se si chiude un file txt si può aprirlo e ritrovarlo nello stesso punto di quando si è chiuso.
+
+In facimento/da fare:
+	-Aggiungere Vai a... (directory) in situazioni come i file ricevuti, file cercati, app.java and so on!
+
+* Bugs da sistemare
+
+	-Se si imposta il tasto destro come indietro, anche li bisogna collegare la funzione stop_plugin
+
+-Aggiungere icona programma (file app)
+
+* Bug fix e aggiustamenti (correzzione problemi):
+
+	-Ora il volume del player non diminuisce ad ogni sua chiusura
+	-Sistemate alcune cose nei task: aggiornando si riseleziona il task che era selezionato (se esiste ancora), risolti bug sull'uid in caso di accenti,
+		la funzioni chiudi e termina erano invertite (ora se si fa chiudi su winfile infatti prima salva le impostazioni e fa l'effetto)
+	-Grave problema nella copia dei file risolto: ora dovrebbe realmente funzionare in ogni occasione
+	-Se ora si apre un immagine con nome accentato, viene trovato il corretto indice
+	-Bug risolto: se non riesce a caricare i colori dal theme_prop.ini a seguito della mancanza di theme.dat, ora WinFile si avvia lo stesso
+	-Tolti try/except nella funzione di avvio di un file: risulterà cosi più facile il debug
+	-Ora i componenti dei temi non sono case-sensitive (es: UI.zip oppure ui.ZIP)
+	-Cambiato l'ordine di priorità del metodo di avvio dei file
+	-Corretta la visualizzazione dell'aspetto nelle informazioni su un immagine
+	- Appena aperto un txt, vai a linea, di default ora 1 e non 0
+	-Se si cambia orientamento durante la visione delle informazioni su un immagine, all'uscita si adatta anche l'immagine visualizzata
+	-Ricerca nel player audio migliorata sistemata per durate minori di 10 sec (1 sec se durata <10; altrimenti calcola il 10 % della durata e usa quello)
+	-Alcuni popup adattati al tema
+	-Ulteriori ottimizzazioni di codice
+	-Ora avviene la pulizia completa delle immagini in ram nel visualizzatore immagini (del s.img,s.fimg). Prima veniva solo cancellata quella pronta da visualizzare a schermo e non quella originale
+	-Talvolta nel visualizzatore immagini veniva saltata una foto per la elevata velocità di scansione dei tasti [ora non si possono più scorrere velocemente tendo premuti i tasti avanti e indietro]
+	-Movimenti più fluidi nelle liste (tolte tutte le conversioni a unicode. Vedi sotto) soprattutto si nota in landscape
+	-Invio bluetooth sistemato: vari fix non gravi
+	-Bug accenti completamente tolti , rinnovate alcune funzioni, aggiunto 'Informazioni' nella selezione dell'applicazione e sistemato il codice in Apri Con
+	-Sostituita libreria applist con msys: ora i problemi con 'apri con' dovrebbero (testate) essere risolti...
+	-Lista task ancora più rapida e uid 100% corretti rispetto a valutare tramite i processi: libreria msys ;)
+	-Problema con il caricamento di immagini danneggiate: ora si rivede normalmente l'errore
+	-Piccolo bug risolto nella creazione di file e cartelle se si preme su Annulla (niente di visibile ma sulla console dava errore nella codifica di None..)
+
+*Bug/fix/novità/note rigurado le funzioni interne (plugin developer)
+
+	-IMPORTANTE: metodo pulizia/chiusura plugin cambiato (migliorato, chiama la funzione di pulizia anche alla chiusura di WinFile [se impostata])! Vedi sotto per info..
+	-ui.change_screen_mode accetta ora il parametro mode per impostare una qualsiasi rotazione [0,1,2]
+	-Le funzioni della classe ui,user e progress_dialog accettano SOLO stringhe unicode. Altre stringhe non saranno visualizzate correttamente o per niente. Ora la classe user non converte più le stringhe in unicode
+	     per questioni di velocità: titolo, testo e altri elementi DEVONO essere unicode. Anche altre funzioni come text_right,text_center ecc... non effettuano più la conversione al volo
+	     Anche altre classi come la ListBox (istanza GrafList...Si possono anche creare altre instanza di questa classe...) per snellirle ho tolto tutti i unicode
+	-ui.change_screen_mode accetta ora il parametro mode, che imposta un orientamento arbitrario [0,1,2]
+	-ui.draw accetta solo im e target niente mask. Per quello usare: ui.canvas_image.blit e poi ui.canvas_refresh() [disegna anche softkey]. Per il disegno diretto [non salva l'immagine e non la ripristina dopo aver perso il focus ma è più veloce e non disegna altro], usare ui.canvas
+	-gestione_file.removedir() ora funziona correttamente anche con sottocartelle (problema di chiamata a se stessa...) [vedi plugin zip]
+	-mini_viewer accetta anche il parametro directory, cerca immagini nella directory selezionata
+	-start(mode=0,file=None,cb=None,cwd=None)->mode: apertura 0 normale, 1 internamente, 2 da sistema ; cb funzione di callback, a cui viene passato stato ui precedente e file (se aperti con un visualizzatore interno) ; cwd: current working directory [NON IN USO, per ora]
+	-Ora la versione di WinFile minima richiesta dal plugin viene controllata [attenzione a mettere le variabili obbligatore]
+	-Risolto il bug nella funzione select_item: ora non da problemi se non ci sono elementi: esegue semplicemente il redraw (se il parametro r non è 0) [select_item(<item>,[r=1])]
+	-dataformatter.sizetostr ritorna ora unicode come gethour e getdate
+
+* Funzionalità aggiunte:
+
+	-I plugin possono essere ora nominati così (multiestensioni): es. zip,jar,dta.py -> Apre file zip,jar,dta (jar/dta sono archivi zip rinominati)
+	-Aggiunta la possibilità di modificare le immagini (tramite applicazione del telefono)
+	-Mentre si scorrono le immagini viene mostrato: n. immagine corrente/totali e una volta arrivati alla fine, ricomincia da capo lo scorrimento
+	-Aggiunti nuovi plugin: mbm (by snake87), sis (by Memory) e html (by Giuppe)
+	-Si può ora creare un file txt con tutte le applicazioni installate, in ordine di categoria (menu->Utilità->App. installate. NB: disponibile solo se si è in una cartella, non in root)
+	-Menu e tasti cambiati quando ci si trova in cartelle vuote [tip: premendo il tasto centrale si apre il menu...]
+	-La scansione dei temi avviene ora anche nelle directory radice di C: e E: (solo primo livello, niente sottocartelle)
+	-Il tema può essere salvato in [unità winfile]:\Nome_by_autore.zip e inviato ad un'altro dispositivo
+
+* Plugins changelog:
+	*Supporto Plugin WinFile
+		-All' avvio di un plugin viene controllata la versione di WinFile minima richiesta. Se ci vuole una versione maggiore di quella attuale, avvisa e chiede se proseguire.
+		-Massima precedenza per la cartella FileOpen: se nel caso nella cartella Libs c'è un file con lo stesso nome del plugin, non carica quello ma quello corretto (nella cartella FileOpen)
+		-Metodo pulizia/chiusura plugin migliorato.
+
+	* zip,jar,dta
+		
+		-Alla chiusura viene eseguita la pulizia dei file temporanei (anche uscendo da WinFile con comando Esci)
+		-La directory temporanea ha una parte di nome che dipende dall'ora: meno rischio (già difficile prima) di conflitto
+		-L'estrazione di un singolo elemento funziona anche con cartelle
+		-Quando si apre un file per la seconda volta, se è ancora presente nella cartella temporanea, non lo riestrae
+		-Buffer estrazione aumentato: dovrebbe essere un po più veloce
+		-ToDo: aggiungere metodo per l'estrazione di file molto grossi (che non si possono leggere in ram): metodo leggi-decomprimi-scrivi, leggi-decomprimi-scrivi...
+		-Se si tratta di un file jar, chiede se installare o esplorare il contenuto
+
+	* sis
+
+		-Aggiunta la visualizzazione delle informazioni sull' installer
+		-Codice ottimizzato, rimosse molte cose inutili, range sostituiti con xrange
+		-Estrazione dei file, totali (con possibilità di visualizzare il rapporto finale) e singolo (da ampliare) [ ! niente richiesta iniziale]
+		-Alcuni bug risolti
+		-Dimensione files visualizzata (compressa)
+		-Gli elementi sono ora messi in ordine alfabetico con le directory all'inizio
+
+	* skn
+
+		-Aggiunta la funzione di ridenominazione del nome, con backup del file originale prima della modifica
+		-Alcune cose sistemate
+
+*Known bugs/problems:
+
+	-Cambiare lo stato bluetooth sul 6600 (segnalare se su altri sistemi) fa crashare winfile
+	-Se ad esempio nel plugin dei file zip viene aperto un file zip [o cmq altro plugin caricato], alla fine i file temporanei del primo file zip aperto rimangono e torna alla schermata dei file anzichè nel archivio di partenza...
+
+Priorità avvio di un file, se il metodo non è disponibile passa al successivo:
+1) .app & .exe avviati senza nessun altro controllo
+2) apertura con apri con
+3) apertura tramite plugins
+4) apertura tramite visualizzatori interni
+5) apertura tramite sistema
+
+Ovviamente le cose cambiano se:
+-si avvia con metodo "Apri da sistema": apre direttamente da sistema
+-si avvia con metodo "Apri internamente": apre il file tramite un plugin (priorità max) o visualizzatore interno
+
+
+
+* Bug:
+- Se ci si posiziona in una cartella, e si cancella un file tramite altro programma, quando si ritorna in winfile il file resta nella lista.
+
+*Suggerimenti
+- Memorizzazione della posizione nei file aperti con il visualizzatore testuale, in questo modo se si chiude un file txt si può aprirlo e ritrovarlo nello stesso punto di quando si è chiuso.
+si potrebbe memorizzare in un file del tipo position.dat
+- Se un file si copia nella stessa directory creare un file di nome NomeFile(2).Estensione
+- Quando si guardano le info di un file txt visualizzare anche N Caratteri, N Parole, N Righe
+- Aggiungere l'help nel miniplayer che spiega la funzione di tutti i tasti (ovviamente cambia l'help cambiando orientamento, dato che cambiano anche i tasti).
+L'help visualizzato tipo about di winfile
+Esempio:
+COMANDI DEL MINIPLAYER
+
+Tasto 1 -> Precedente
+Tasto 3 -> Successiva
+Tasto centrale -> Riproduci/Pausa
+Freccia su -> Alza Volume
+Freccia giu -> Abbassa Volume
+Freccia sinistra -> Indietro tot sec
+Freccia destra -> Avanti tot sec
+
+DALLA VERSIONE 1.03
+
+*Bug
+- Se si tenta di inviare via bluetooth quando è spento appare la domanda di attivare il bluetooth con la finestra normale e non del tema
+
+*Suggerimenti
+- Aprire i file awb con il miniplayer, e associargli l'icona degli amr (gli awb sono letti da tutti i symbian, e se non mi sbaglio sono degli amr ad "alta" qualità)
+- Aggiungere l'help nell'image viewer che spiega la funzione di tutti i tasti (ovviamente cambia l'help cambiando orientamento, dato che cambiano anche i tasti).
+L'help visualizzato tipo about di winfile
+Esempio:
+COMANDI DELL'IMAGE VIEWER
+
+Tasto 1 -> Precedente
+Tasto 3 -> Successiva
+Tasto 4 -> Luminosità -5%
+Tasto 6 -> Luminosità +5%
+Tasto 5 -> Adatta
+Tasto 2 -> Zoom+
+Tasto 8 -> Zoom-
+Frecce -> Spostamento dell'immagine
+
+
+- Quando si visualizzano le informazioni dello zip sarebbe forse meglio:
+Dimensione:
+* Compressa: 16.756 KB
+* Non Compressa: 18.956 KB
+Data Modifica: 11/04/2009
+Ora Modifica: 11:01:06
+Attributi
+- Archivio
+Files: 1
+Cartelle: 0
+
+oppure...
+
+Data Modifica: 11/04/2009
+Ora Modifica: 11:01:06
+Attributi
+- Archivio
+Dimensione:
+* Compressa: 16.756 KB
+* Non Compressa: 18.956 KB
+Files: 1
+Cartelle: 0
+
+
+- Quando si cerca un file visualizzare i file trovati in ordine alfabetico
+- Quando si visualizza l'elenco App Java visualizzare i file trovati in ordine alfabetico ed unita:
+app in C ordinate + app in E ordinate
+- Aggiungere funzionalità screenshot ovviamente anche quando il programma è in background
+- Nei processi e in task permettere vari tipi di ordinamento a scelta (Nome, UID, ...)
+
+PLUGINS
+
+* Bug
+- Bug nell'apertura di alcuni file zip contenenti un separatore cartella diverso dal normale. (Per controllare ho allegato un file (Test.zip), creato con X-plore)
+
+
+
+* Suggerimenti
+- Nel visualizzatore vcf visualizzare i contatti in ordine alfabetico
+
+Ci sarà la possibilità di gestire più lingue nei plugin?
+Se si da file esterno nella cartella tipo Lang\Plugin\FileOpen?

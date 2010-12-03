@@ -1,0 +1,85 @@
+********************
+WinFile 1.05 beta 1*
+********************
+
+Changelog:
+
+Generale
+    -Introduzione multilingua: per ora presente Italiano (Default) e Inglese. Facile creazione di file di lingua.
+    -Menu principale migliorato. Anche altri menu rivisti.
+    -Aggiunti i tasti rapidi (molti ancora da sistemare)
+    -Ripristinata la compatibilità totale di alcune parti del programma su 6630/80 e altri
+    -Moltissimi aggiustamenti al codice, ottimizzazioni e rinforzamenti. Rimosse moltissime cose inutili al fine di rendere leggero il codice
+    -Spazio necessario per l'installazione diminuito
+    -funzioni sizetostr,getdate, gethour della classe data_formatter ottimizzate (da 8 a 1 linea di codice!Usando le formattazioni delle stringhe)
+    -Sistemate molte stringhe nel programma. Più adatte al contesto.
+    -Aggiunto "Debug Log": semplice console dove vengono riportati tutti gli output del programma (errori-info-warning). Utile per debug plugin, temi e file di lingua.
+Grafica
+    -Mask temi convertite in modo appropriato (by Snake87) per funzionare su 6600 e risparmiare spazio
+    -Font normalizzato in titolo listbox: quando taglia del testo non cambia font (se si usa un font personalizzato) e sistemato il taglio
+    -draw della progress_bar velocizzato, alcuni calcoli precaricati (al di fuori di draw)
+Esploratore file e altre risorse
+    -Velocizzata apertura cartelle
+    -bugfix: aggiunti e sistemati alcuni tipi di file (icona e apertura)
+    -Menu tasks-processi riordinato
+    -Ora non è più possibile selezionare elementi nei processi, tasks e root
+Impostazioni - temi - altro
+    -bugfix: eticchetta sinistra in Apri Con sistemata
+    -numerose ottimizzazioni nella sezione temi; qualche bugfix
+Visualizzatori - player audio
+    -Alcuni piccoli aggiustamenti del visualizzatore immagini
+    -Visualizzatore testi migliorato; se si cerca una parola ora il testo viene spostato sulla parola trovata e non più solo sulla linea.
+    -Ricerca parole rinforzata
+    -bugfix: risolti alcuni problemi legati al riavvolgimento/avanzamento
+    -bugfix: lettura file lrc (lirycs) migliorata e sistemata
+    -bugfix: rimosso fade out audio (non è preciso a risalvare il volumme)
+Plugins
+    -Aggiunto plugin per apertura/estrazione file di backup .arc
+    -Aggiunto plugin per l'apertura di immagini .ota (b/n) by Snake
+    -Plugin compilati per prestazioni migliori: i sorgenti sono compressi in Plugins\FileOpen_sources.zip
+    -Plugin vcf ottimizzato e alcuni bug fix
+    -Tutti i plugin rivisti (**Vedi in basso)
+Informazioni file - sistema - avanzate
+    -Alcune informazioni di sistema aggiunte (versione S60 e versione python installata)
+    -bugfix: valori inversi editor mp3
+    -Se un file-cartella-disco non è accessibile viene correttamente riportato
+    -bugfix: diverse migliorie per supportare al meglio caratteri non-ascii
+
+
+
+**Tutti i plugin sono stati rivisti e ottimizzati**
+
+SKN: - codice pulito e codice inutile tolto (funz: restore inutile, in molti plugin, tolta)
+     - bugfix riguardo alla lettura UID
+     - file aggiornati per visualizzare il file di backup creato (se rinominato)
+     - Finestre di fine processo (o errore) senza timeout
+
+VCF:
+     - riscritto il parser
+     - più accurato e molti bug rimossi
+     - se il contatto ha un immagine associata, la visualizza in icona
+     - premendo il tasto centrale su un contatto vengono visualizzati ulteriori dettagli: nomi, numeri, email e siti web
+
+SIS:
+     - sistemato e ripulito il codice completamente
+     - molti bug riguardo all' esplorazione eliminati
+     - pieno supporto per i nomi con caratteri non ascii
+     - estrazione riscritta
+
+(i dettagli dei cambiamenti si trovano nei plugin)
+
+Known Issues (Problemi noti):
+
+- la copia, in alcune situazioni, non va come dovrebbe e copia i file in C:!! (Molto strano e mai notato prima...)
+- Alcuni tasti nei menu devono essere corretti (ci sono molti problemi ad esempio nel menu del visualizzatore dei testi)
+- Per questa beta, alcune parti grafiche saranno corrotte
+- Opzioni file non è interamente funzionale al momento
+
+
+Modificata la funzione ui.shutdown_effect: cambiati i parametri e migliorata la sua funzionalità.
+
+ui.shutdown_effect(step=-10,fr=0,to=100) #Crea l'effetto di uscita della schermata attuale sul canvas
+#Step definisce la velocità [1-100] 1 molto lento; 100 immediato. Se positiva si avrà dissolvenza sul bianco; negativa sul nero.
+#fr definisce da che percentuale partire
+#to definisce la percentuale di fine
+#L'uscita di WinFile richiama la funzione così com'è mentre la chiusura di un' immagine: ui.shutdown_effect(-20) (+ veloce)
