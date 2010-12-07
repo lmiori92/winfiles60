@@ -1,0 +1,28 @@
+ALREADY DONE:
+
+- input system partially rewritten for touch support and better key management
+
+
+
+MAIN GOALS:
+
+- akntextutils: new module in C++ like the old but with support to every font and ported to 3rd ed. Or another module in pure python (slower)
+- new text stream (lines in a text viewer or note popup) object: it should adapt line spacing (height) for every resolution and aspect
+- split WinFile in modules, like graphics, ui, utils, viewers, ...
+- adapt every coordinate of text, menus etc... for every resolution (some objects are already ready)
+- rewrite skin management (see the draft .py)
+
+
+OTHER:
+
+- rewrite plugin system: every startup check for plugins (and their attributes). Possibility to manage them, have informations, disable, uninstall, settings (not only when plugin is running). PLugins also for the whole program (i.e: new menu functions...), image, text, audio formats...(some draft already written, src\plugins)
+- improve file copy: the system works quite good but doesn't ask to overwrite ecc...
+- improve file delete: check if read-only
+- check translations, improve plugin translations
+- new update system: check every core file for an update. Check and ask user which version with his changelog, warn about betas...
+Permit updates also if not main release (warning user about these betas). (System based on revision n°?) [idea from Rigs Of Rods]
+
+IDEAS:
+
+- multiple windows/tabs
+- 
