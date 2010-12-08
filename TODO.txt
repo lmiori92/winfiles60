@@ -2,7 +2,10 @@ ALREADY DONE:
 
 - input system partially rewritten for touch support and better key management
 
+GRAPHICS:
 
+- ridefinire dimensioni di ogni elemento. Tempo fa Dav91 mi aveva passato un documento con una sua idea. Prendere spunto da li.
+- 
 
 MAIN GOALS:
 
@@ -21,8 +24,13 @@ OTHER:
 - check translations, improve plugin translations
 - new update system: check every core file for an update. Check and ask user which version with his changelog, warn about betas...
 Permit updates also if not main release (warning user about these betas). (System based on revision n°?) [idea from Rigs Of Rods]
+- use EYED3 for mp3 management to support id3v2 too
+- add support to different time zones to correct some time/date calculation bugs
 
 IDEAS:
 
 - multiple windows/tabs
 - 
+
+
+For other issues, see the tab in google code!
