@@ -9,6 +9,7 @@ GRAPHICS:
 
 MAIN GOALS:
 
+- !! resolution callback !! (Split with the 2nd ed. system???)
 - akntextutils: new module in C++ like the old but with support to every font and ported to 3rd ed. Or another module in pure python (slower)
 - new text stream (lines in a text viewer or note popup) object: it should adapt line spacing (height) for every resolution and aspect
 - split WinFile in modules, like graphics, ui, utils, viewers, ...

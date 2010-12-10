@@ -1,6 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 
+# GNU GENERAL PUBLIC LICENSE
+# WinFile ( http://code.google.com/p/winfiles60/ ) - A powerful filemanager for the Symbian OS
+# Copyright   2008-2010 memoryN70 ( memoryS60@gmail.com )
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
 #WinFile Main Programm source code
 #Python console execute: execfile("E:\\system\\apps\\python\\my\\winfile 1.05.py")
 #execfile("E:\\data\\python\\winfile 1.05.3.py")
@@ -1502,9 +1520,12 @@ class _UI:
     def unbindall(s):
         s.bindarr = []
         s.touchbindarr = []
-    def bind(s, key, cb, type = appuifw.EEventKey):
-        fk = FKey(key, cb, type)
-        s.bindarr.append(fk)
+    def bind(s, key, cb, ktype = appuifw.EEventKey):
+        if not (type(key) in [types.TupleType, types.ListType]):
+            key = [key]
+        for k in key:
+            fk = FKey(k, cb, ktype)
+            s.bindarr.append(fk)
     def bind_touch(s, type, cb, rect = None):
         #Do some calculations to speed things up
         x1,y1,x2,y2 = rect[0][0], rect[0][1], rect[1][0], rect[1][1]
@@ -1867,23 +1888,17 @@ class GrafList:
 
         s.element_size = 40 #NOT DEFINED; EXAMPLE!!!
 
-#        if ui.landscape:
-            
         s.elem_page=int(ui.display_size[1]/s.element_size)
-#        else:
-            #s.list_image=Image.new(ui.screen_size)
-#            s.elem_page=5
         s.list_image=Image.new(ui.display_size)
         
         s.scroll_bar = ScrollBar(s.select_item)
-        s.scroll_bar.position = (100,200,200,10)
+        s.scroll_bar.position = (ui.display_size[0]-10,20,ui.display_size[1]-41,15)
         s.scroll_bar.orientation = 'vertical'
         # s.vol_bar.lenght = 200
         # s.vol_bar.height = 20
         #s.scroll_bar.max_value = 10
         s.scroll_bar.init_values()
-        s.scroll_bar.set_touch(ui.canvas)
-        
+
         #s.old_mode=ui.landscape
         #s.x,s.y=s.list_image.size
         #s.size_zoom=100
@@ -1896,6 +1911,8 @@ class GrafList:
         #    s.elem_page=5
         s.elem_page=int(ui.display_size[1]/s.element_size)
         s.list_image=Image.new(ui.display_size)
+        s.scroll_bar.position = (ui.display_size[0]-10,20,ui.display_size[1]-41,15)
+        s.scroll_bar.init_values()
         #s.x,s.y=s.list_image.size
         #if (ui.landscape!=s.old_mode): s.position,s.index,s.page=0,0,0
         #s.old_mode=ui.landscape
@@ -2046,11 +2063,12 @@ class GrafList:
         s.no_data,s.position,s.page,s.sel_cb,s.left_cb,s.right_cb,s.elements,s.selected,s.mode_cb=sett
     def cbind(s):
         ui.unbindall()
+        #Touch screen for the scroll bar
+        s.scroll_bar.set_touch(ui.canvas)
         ui.mode_callback=s.screen_change
         if ui.landscape==1:
             ui.bind(EScancodeUpArrow, lambda: s.key_cb(2))
             ui.bind(EScancodeDownArrow, lambda: s.key_cb(3))
-            ui.bind(EScancodeSelect, lambda: s.key_cb(1))
             ui.bind(EScancodeRightArrow, s.down)
             ui.bind(EScancodeLeftArrow, s.up)
             ui.bind(EScancode0, s.page_up)
@@ -2059,7 +2077,6 @@ class GrafList:
         if ui.landscape==2:
             ui.bind(EScancodeDownArrow, lambda: s.key_cb(2))
             ui.bind(EScancodeUpArrow, lambda: s.key_cb(3))
-            ui.bind(EScancodeSelect, lambda: s.key_cb(1))
             ui.bind(EScancodeLeftArrow, s.down)
             ui.bind(EScancodeRightArrow, s.up)
             ui.bind(EScancode0, s.page_up)
@@ -2068,12 +2085,13 @@ class GrafList:
         else:
             ui.bind(EScancodeUpArrow, s.up)
             ui.bind(EScancodeDownArrow, s.down)
-            ui.bind(EScancodeSelect, lambda: s.key_cb(1))
             ui.bind(EScancodeRightArrow, lambda: s.key_cb(2))
             ui.bind(EScancodeLeftArrow, lambda: s.key_cb(3))
             ui.bind(EScancode9, s.page_up)
             ui.bind(EScancodeHash, s.page_down)
             ui.bind(EScancode0, s.select_element)
+        #Common keys
+        ui.bind((EScancodeSelect, EStdKeyEnter,), lambda: s.key_cb(1))
     #def img_from_res(s,res,img):
 # if preview_switch==1:
      #   try:
@@ -2166,12 +2184,12 @@ class GrafList:
             #s.list_image.rectangle((lx,15,lx-6,ly-15),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2)
             if elen>s.elem_page:
                 #Scrollbar
-                xa,xb=lx-5,lx-1
-                ratio = (ly-28)/elen
-                q=15 + int(ratio*s.page)
-                qp=q + int(ratio*s.elem_page)
-                s.list_image.rectangle((xa,q,xb,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
-                s.scroll_bar.max_value = elen-s.elem_page
+                # xa,xb=lx-5,lx-1
+                # ratio = (ly-28)/elen
+                # q=15 + int(ratio*s.page)
+                # qp=q + int(ratio*s.elem_page)
+                # s.list_image.rectangle((xa,q,xb,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
+                s.scroll_bar.max_value = elen - s.elem_page
                 s.scroll_bar.actual_value = s.page
                 s.scroll_bar.draw(s.list_image)
                 #s.list_image.polygon((xa,q,xb,q,xb,qp,xa,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
