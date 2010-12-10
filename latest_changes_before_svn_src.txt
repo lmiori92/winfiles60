@@ -1,0 +1,13 @@
+- numero elementi listbox dinamico in base a dimensione schermo...
+- wrap_text_to_array in puro python senza lib c++. Needs testing!
+- class TextRenderer by
+    __author__ = "Mikko Ohtamaa <mikko@redinnovation.com>"
+    Text as an object. Wrap to width already inside and multi line render ready. To adjust only little thing and optimize something. Strip docs comments
+    To add: alignment, wrap to lines or cut in the given width, scrolling option, render text in a given rect area, 
+    
+oppure stavo pensando di creare si la classe TextRender ma solo per testo multilinea
+e fare una funzione rapida text(pos[o rect], text, fill, font, aligment, cut = [0 o 1]...)
+sopratutto se si può scrivere all'interno di un rect si possono definire le varie zone dello skin una sola volta (per normale e landscape dove necessario) oppure solamente quando la risoluzione cambia
+cosi si ha o meno calcoli durante l'esecuzione dei redraw
+
+- creata funzione text() con varie opzioni di formattazione
