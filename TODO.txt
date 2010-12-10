@@ -27,6 +27,8 @@ OTHER:
 Permit updates also if not main release (warning user about these betas). (System based on revision n°?) [idea from Rigs Of Rods]
 - use EYED3 for mp3 management to support id3v2 too
 - add support to different time zones to correct some time/date calculation bugs
+- end the screenshot feature
+- test and place in menu the backlight feature
 
 IDEAS:
 
