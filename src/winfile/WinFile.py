@@ -21,8 +21,9 @@
 
 #WinFile Main Programm source code
 #Python console execute: execfile("E:\\system\\apps\\python\\my\\winfile 1.05.py")
-#execfile("E:\\data\\python\\winfile 1.05.3.py")
-#Symbian UID: 0x06dfae12
+#                        execfile("E:\\data\\python\\winfile 1.05.3.py")
+#Symbian UID (2nd edition): 0x06dfae12
+#Symbian UID (3rd-5th-^3): 0x
 
 # python libs
 from __future__ import generators #Serve per una scansione speciale dei files per la ricerca
@@ -37,9 +38,11 @@ import traceback
 #traceback.print_exc()
 #import imp
 
-shell = 1
-__version__= 1.053
+__shell__ = 1
+__version__ = 1.053
 __version_info__ = (1, 05, 03, '--/--/2010')
+__author__ = "MemoryN70 <memoryS60@gmail.com>"
+__long_name__ = "WinFile: the filemanager for Symbian OS"
 
 class DEBUGGER:
     def __init__(s):
@@ -65,10 +68,11 @@ class DEBUGGER:
                 pass
         for i in s.cbs:
             i(t)
+
 class _directories:
     def __init__(s):
-        s.local_directory=sys.path
-        s.disk=s.local_directory[0][0:1]
+        #s.local_directory=sys.path
+        s.disk=sys.path[0][0:1]
         s.appdir=s.disk+":\\System\\Apps\\WinFile"
         try:
             s.skin_dir=os.path.normpath(open(s.appdir+"\\theme_dir.ini").read())
@@ -91,15 +95,21 @@ class _directories:
             return 1
         except:
             return 0
+
 debug = DEBUGGER()
 #konsole = Konsole()
 #debug.cbs.append(konsole)
+
 print "WinFile",__version__
 print __version_info__
 print time.ctime()
+
 directory=_directories()
+
 if directory.appdir not in sys.path:
+    #Be sure to include the local directory...WinFile libs have te priority
     sys.path.insert(0,directory.appdir)
+
 print directory.appdir#, directory.local_directory
 
 # symbian libs
@@ -467,31 +477,33 @@ def text(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|AL
         If you want only to draw some text at (x,y) without alignment or other calculations, use Image.text.
         
         @param img: canvas or Image object
-        @param coords: [X,Y] or [X1,Y1,X2,Y2] rectangle
-        @param text unicode text string
-        @param font appuifw font (name, size, options)
-        @param fill color (r,g,b) or int
-        @param aligment ALIGNMENT_LEFT = 1ALIGNMENT_CENTER = 2ALIGNMENT_RIGHT = 4 | ALIGNMENT_DOWN = 8 ALIGNMENT_MIDDLE = 16 ALIGNMENT_UP = 32
-        @param cut 1 - cut text at x-x0 or width
-        @param width defines width instead of img.size[0]-x0
+        @param coords: [X,Y] or [X1,Y1,X2,Y2] rectangle. In the [x,y] mode, x or y can be None to set tha maximum x or y of the image
+                            (usefull for ALIGNMENT_RIGHT, ALIGNMENT_DOWN...when it's not necessary to specify a coord but it's calculated by the function)
+        @param text: unicode text string
+        @param font: appuifw font (name, size, [options]) or None (default font) or 'normal'
+        @param fill: color (r,g,b) or int
+        @param aligment: combinations of (ALIGNMENT_LEFT = 1 ALIGNMENT_CENTER = 2 ALIGNMENT_RIGHT = 4) | (ALIGNMENT_DOWN = 8 ALIGNMENT_MIDDLE = 16 ALIGNMENT_UP = 32)
+        @param cut: 1 to cut text at img.size[0]-x0 or width
+        @param width: defines maximum text width instead of img.size[0]-x0
         x,y image size
         x0, y0 first coord of the rect (upper left corner)
-        xf, yf initial pos (of the text
+        xf, yf initial pos (of the text)
         """
         if len(coords)==2:
             #X,Y
             x0, y0 = 0,0
             xf, yf = coords[0:2]
             x, y = img.size
-            if (not xf):
+            if (xf==None):
                 xf = x
-            if (not yf):
+            if (yf==None):
                 yf = y
         else:
             #Rect
+            #TODO: improve calculation...some optimizations
             x1,y1,x2,y2 = coords[0][0], coords[0][1], coords[1][0], coords[1][1]
-            x = xrange(min(x1,x2),max(x1,x2)+1) #x width
-            y = xrange(min(y1,y2),max(y1,y2)+1) #y height
+            x = max(x1,x2)-min(x1,x2) #x width
+            y = max(y1,y2)-min(y1,y2) #y height
             #in this case initial pos (of the text) is the lower left corner
             xf, yf = min(x1,x2), max(y1,y2)
             #First coord of the rect (upper left corner)
@@ -521,9 +533,9 @@ def text(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|AL
             yf = y0 + (abs(bbox[1])+abs(bbox[3]))
             #print "Up"
         img.text((xf, yf), text, fill, font)
-        #@return pos, bbox, rpixel, n_chars
+        return (xf, yf), bbox, rpixel, n_chars
 
-__author__ = "Mikko Ohtamaa <mikko@redinnovation.com>"
+#__author__ = "Mikko Ohtamaa <mikko@redinnovation.com>"
 
 class TextRenderer:
     """ Simple multi-line text rendering for PyS60 Canvas.
@@ -1614,20 +1626,29 @@ class Menu:
         self.sm = None
         self.index = 0
         self.page = 0
-        if ui.landscape:
-            #self.img = Image.new(ui.landscape_size)
-            #self.menu_img = Image.new(ui.landscape_size)
-            #self.bg_img = Image.new(ui.landscape_size)
-            self.elem_page=5
-        else:
-            self.elem_page=7
         self.img = Image.new(ui.display_size)
         self.menu_img = Image.new(ui.display_size)
         self.bg_img = Image.new(ui.display_size)
-            
         self.img.blit(ui.canvas_image)
         self.bg_img.blit(ui.canvas_image)
         blur(self.bg_img,200)
+        self.element_size = (grafica.mn_i.size[1] + 5)
+        self.text_height = grafica.mn_i.size[1] * .75
+        #self.text_rect = [grafica.mn_i.size[0], grafica.mn_i.size[1], ]
+        self.elem_page =  int (ui.display_size[1] * .75 / self.element_size)# / 29
+        mx,my=self.menu_img.size
+        #TODO: 25 is not always correct...check that
+        if self.num>=self.elem_page:
+            self.y = (my-5) - (self.element_size * self.elem_page)
+        else:
+            self.y = (my-5) - (self.element_size * self.num)
+#        if ui.landscape:
+            #self.img = Image.new(ui.landscape_size)
+            #self.menu_img = Image.new(ui.landscape_size)
+            #self.bg_img = Image.new(ui.landscape_size)
+            # self.elem_page=5
+        # else:
+            # self.elem_page=7
         self.cbind()
         self.show()
     def update_background(self,img):
@@ -1719,23 +1740,21 @@ class Menu:
         ui.unbindall()
     def redrawmenu(self):
         mx,my=self.menu_img.size
-        if self.num>=self.elem_page:
-            y = (my-20) - (20 * self.elem_page)
-        else:
-            y = (my-20) - (20 * self.num)
+        sx,xy=grafica.mn_i.size
         self.menu_img.blit(self.bg_img)
-        self.menu_img.blit(grafica.bg_img, target = (0,y), source = (0,y,mx,my-13))
-        self.menu_img.rectangle([(0,y),(mx,my-14)], outline=settings.window_border,width=1)
-        self.menu_img.blit(grafica.mn_i, target = (4,((y + 5) + (self.index * 19))), mask=grafica.mn_i_mask)
+        self.menu_img.blit(grafica.bg_img, target = (0,self.y), source = (0,self.y,mx,my-13))
+        self.menu_img.rectangle([(0,self.y),(mx,my-14)], outline = settings.window_border,width = 1)
+        self.menu_img.blit(grafica.mn_i, target = (4,((self.y + 5) + (self.index * 19))), mask=grafica.mn_i_mask)
         i = 0
         for mn in self.menuarr[self.page:self.page+self.elem_page]:
             i19 = (i * 19)
-            ty = (y + 17) + i19
+            ty = (self.y + 17) + i19
             self.menu_img.text((10,ty), mn.title, settings.text_color)#u'Nokia Sans SemiBold S60')u'LatinBold12'
+            #text(self.menu_img, (sx,sy-self.element_size,mx+10,sy)
             if mn.shortcut:
                 text_right(self.menu_img, ty, mn.shortcut, settings.text_color, u'Nokia Sans SemiBold S60', mx-8)
             if mn.submenu:
-                self.menu_img.polygon([mx-13,((y + 7) + i19),mx-13,((y + 19) + i19),mx-7,((y + 13) + i19)], fill=settings.text_color)
+                self.menu_img.polygon([mx-13,((self.y + 7) + i19),mx-13,((self.y + 19) + i19),mx-7,((self.y + 13) + i19)], fill=settings.text_color)
             i += 1
        # if self.num>self.elem_page:
             #Arrows
@@ -6815,7 +6834,7 @@ class _main_:
             gestione_file.removedir(directory.skin_dir)
             #print "Pulizia eseguita!"
         if restart: return
-        if shell:
+        if __shell__:
             lock.signal()
         else:
             #Force quit in some situations
@@ -7041,7 +7060,7 @@ print "WinFile StartUp Complete!"
 #konsole(u"WinFile StartUp Complete!")
 #konsole.hide()
 
-if shell:
+if __shell__:
     #Set the application lock instance
     lock=e32.Ao_lock()
     #Lock the application without quit to shell until the app is exited
