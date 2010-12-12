@@ -5,7 +5,7 @@ ALREADY DONE:
 GRAPHICS:
 
 - ridefinire dimensioni di ogni elemento. Tempo fa Dav91 mi aveva passato un documento con una sua idea. Prendere spunto da li.
-- 
+- nel menu (per esempio) prendere la dimensione dell'immagine di selezioni. Tramite la funzione di text(coordinate rettangolo img) disegnare il testo (adattamento perfetto).
 
 MAIN GOALS:
 
@@ -15,7 +15,7 @@ MAIN GOALS:
 - split WinFile in modules, like graphics, ui, utils, viewers, ...
 - adapt every coordinate of text, menus etc... for every resolution (some objects are already ready)
 - rewrite skin management (see the draft .py)
-
+- SEarch for TODO: in the source....It can be a surprise!
 
 OTHER:
 
@@ -29,11 +29,16 @@ Permit updates also if not main release (warning user about these betas). (Syste
 - add support to different time zones to correct some time/date calculation bugs
 - end the screenshot feature
 - test and place in menu the backlight feature
+- mail system in 3rd ed?? Caps??
 
 IDEAS:
 
 - multiple windows/tabs
 - 
+
+Small issues:
+
+- winfile seem frozen opening a protected dir, unavailable etc..Show a popup and avoid to CD in that directory
 
 
 For other issues, see the tab in google code!
