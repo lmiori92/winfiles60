@@ -501,9 +501,10 @@ def text(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|AL
         else:
             #Rect
             #TODO: improve calculation...some optimizations
-            x1,y1,x2,y2 = coords[0][0], coords[0][1], coords[1][0], coords[1][1]
+            x1,y1,x2,y2 = coords#coords[0][0], coords[0][1], coords[1][0], coords[1][1]
             x = max(x1,x2)-min(x1,x2) #x width
             y = max(y1,y2)-min(y1,y2) #y height
+            #print y, coords
             #in this case initial pos (of the text) is the lower left corner
             xf, yf = min(x1,x2), max(y1,y2)
             #First coord of the rect (upper left corner)
@@ -527,7 +528,8 @@ def text(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|AL
             xf = x - rpixel + x0#,pos[1])
             #print "Right"
         if (alignment & ALIGNMENT_MIDDLE):
-            yf = y0 + (y - (abs(bbox[1])+abs(bbox[3]))) / 2
+            yf = y0 + (y/2 + ((abs(bbox[1])+abs(bbox[3]))/2) )
+            #print bbox
             #print "Middle"
         elif (alignment & ALIGNMENT_UP):
             yf = y0 + (abs(bbox[1])+abs(bbox[3]))
@@ -1633,15 +1635,16 @@ class Menu:
         self.bg_img.blit(ui.canvas_image)
         blur(self.bg_img,200)
         self.element_size = (grafica.mn_i.size[1] + 5)
+        self.element_size2 = grafica.mn_i.size[1]
         self.text_height = grafica.mn_i.size[1] * .75
         #self.text_rect = [grafica.mn_i.size[0], grafica.mn_i.size[1], ]
         self.elem_page =  int (ui.display_size[1] * .75 / self.element_size)# / 29
         mx,my=self.menu_img.size
         #TODO: 25 is not always correct...check that
         if self.num>=self.elem_page:
-            self.y = (my-5) - (self.element_size * self.elem_page)
+            self.y = (my-20) - (self.element_size * self.elem_page)
         else:
-            self.y = (my-5) - (self.element_size * self.num)
+            self.y = (my-20) - (self.element_size * self.num)
 #        if ui.landscape:
             #self.img = Image.new(ui.landscape_size)
             #self.menu_img = Image.new(ui.landscape_size)
@@ -1740,25 +1743,26 @@ class Menu:
         ui.unbindall()
     def redrawmenu(self):
         mx,my=self.menu_img.size
-        sx,xy=grafica.mn_i.size
+        sx,sy=grafica.mn_i.size
         self.menu_img.blit(self.bg_img)
         self.menu_img.blit(grafica.bg_img, target = (0,self.y), source = (0,self.y,mx,my-13))
         self.menu_img.rectangle([(0,self.y),(mx,my-14)], outline = settings.window_border,width = 1)
-        self.menu_img.blit(grafica.mn_i, target = (4,((self.y + 5) + (self.index * 19))), mask=grafica.mn_i_mask)
+        self.menu_img.blit(grafica.mn_i, target = (4,((self.y + 5) + (self.index * self.element_size))), mask=grafica.mn_i_mask)
         i = 0
         for mn in self.menuarr[self.page:self.page+self.elem_page]:
             i19 = (i * 19)
             ty = (self.y + 17) + i19
-            self.menu_img.text((10,ty), mn.title, settings.text_color)#u'Nokia Sans SemiBold S60')u'LatinBold12'
-            #text(self.menu_img, (sx,sy-self.element_size,mx+10,sy)
+            #self.menu_img.text((10,ty), mn.title, settings.text_color)#u'Nokia Sans SemiBold S60')u'LatinBold12'
+            #self.menu_img.rectangle((4, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), 0,0)
+            text(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.title, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE, 1)
             if mn.shortcut:
-                text_right(self.menu_img, ty, mn.shortcut, settings.text_color, u'Nokia Sans SemiBold S60', mx-8)
+                #text_right(self.menu_img, ty, mn.shortcut, settings.text_color, u'Nokia Sans SemiBold S60', mx-8)
+                text(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.shortcut, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
             if mn.submenu:
-                self.menu_img.polygon([mx-13,((self.y + 7) + i19),mx-13,((self.y + 19) + i19),mx-7,((self.y + 13) + i19)], fill=settings.text_color)
+                #self.menu_img.polygon([mx-13,((self.y + 7) + i19),mx-13,((self.y + 19) + i19),mx-7,((self.y + 13) + i19)], fill=settings.text_color)
+                text(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), u">", settings.text_color, (None, self.text_height*1.15), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
             i += 1
-       # if self.num>self.elem_page:
-            #Arrows
-            
+
         if self.sm:
             self.sm.bimg.blit(self.menu_img)
             self.sm.redrawmenu()
@@ -1788,21 +1792,21 @@ class SubMenu:
             # t=mn.title+mn.shortcut+u"   "
             # self.xl=self.bimg.measure_text(text,'dense')[1]
     def open(self):
+        self.element_size = (grafica.mn_il.size[1] + 5)
+        self.element_size2 = grafica.mn_il.size[1]
+        self.text_height = grafica.mn_il.size[1] * .75
+        self.lenght = 112
+        #self.elem_page =  int (ui.display_size[1] * .75 / self.element_size)# / 29
+        #mx,my=self.menu_img.size
         self.cbind()
         self.show()
+        # if self.num>=self.elem_page:
+            # self.y = (my-20) - (self.element_size * self.elem_page)
+        # else:
+            # self.y = (my-20) - (self.element_size * self.num)
     def close(self):
         self.cunbind()
         self.mn.reopen()
-    # def up(self):
-        # self.index -= 1
-        # if (self.index < 0):
-            # self.index = (self.num - 1)
-        # self.redrawmenu()
-    # def down(self):
-        # self.index += 1
-        # if (self.index >= self.num):
-            # self.index = 0
-        # self.redrawmenu()
     def up(s):
         if s.index>0:
             s.index-=1
@@ -1862,7 +1866,7 @@ class SubMenu:
         else:
             y = (my - 22) - (20 * self.num)
         y1 = my - 16
-        x1 = mx - 112
+        x1 = mx - self.lenght
         self.submenu_img.blit(self.bimg)
         self.submenu_img.blit(grafica.bg_img, target = (x1,y), source = (x1,y,mx-2,y1))
         #self.submenu_img.polygon([(x1,y),(172,y),(172,y1-2),(x1,y1-2)],outline=settings.window_border,width=1)
@@ -1877,7 +1881,7 @@ class SubMenu:
             self.submenu_img.rectangle((mx-7,y+3+ybar-lbar,mx-4,y+3+ybar),outline=settings.scroll_bar_main_color1,fill=settings.scroll_bar_main_color2)
         i = 0
         for mn in self.menuarr[self.page:self.page+self.elem_page]:
-            self.submenu_img.text((mx-104,(y + 17) + (i * 19)), mn.title, settings.text_color)#u'Nokia Sans SemiBold S60')
+            self.submenu_img.text((mx-104,(y + 17) + (i * 19)), mn.title, settings.text_color)
             if (mn.shortcut != None):
                 text_right(self.submenu_img, (y + 17) + (i * 19) , mn.shortcut, settings.text_color, u'Nokia Sans SemiBold S60', mx-10)
             i += 1
@@ -4074,14 +4078,14 @@ class mini_player:
         # s.vol_bar.height = 20
         s.vol_bar.max_value = 10
         s.vol_bar.init_values()
-        s.vol_bar.set_touch(ui.canvas)
+        
         
         s.seek_bar = StatusBar(s.set_seek)
         s.seek_bar.formatter = long
         s.seek_bar.position = (50,50,200,10)
         #s.seek_bar.max_value = 10
         s.seek_bar.init_values()
-        s.seek_bar.set_touch(ui.canvas)
+        
         s.redraw_screen()
         s.canvas_refresh()
         s.bind()
@@ -4159,6 +4163,8 @@ class mini_player:
             s.t.after(0.1,s.refresh_ao)
     def bind(s):
         ui.unbindall()
+        s.seek_bar.set_touch(ui.canvas)
+        s.vol_bar.set_touch(ui.canvas)
         ui.bind(63557,lambda: s.audio_istance.pause())
         ui.bind(EStdKeyIncVolume,lambda: s.audio_istance.vol_up())
         ui.bind(EStdKeyDecVolume,lambda: s.audio_istance.vol_down())
@@ -4389,9 +4395,12 @@ class mini_player:
             s.canvas_refresh()
     def redraw_screen(s):
         s.main.blit(grafica.bg_img)
-        try: state,volume,duration,current_position=s.audio_istance.getstate()
-        except: state,volume,duration,current_position=0,0,0,0
-        text_cut(s.main, (2,13) , u'%s' % (s.filename), settings.text_color, None)
+        try:
+            state,volume,duration,current_position=s.audio_istance.getstate()
+        except:
+            state,volume,duration,current_position=0,0,0,0
+        #text_cut(s.main, (2,13) , u'%s' % (s.filename), settings.text_color, None)
+        text(s.main, (2, None), u'%s' % (s.filename), settings.text_color, None, ALIGNMENT_UP, 1)
         if s.tags:
             s.main.text((6,40),u'%s: %s' % (_(u"Titolo"),s.title), settings.text_color)
             s.main.text((6,52),u'%s: %s' % (_(u"Artista"),s.artist), settings.text_color)
@@ -4400,10 +4409,10 @@ class mini_player:
             s.main.text((6,40),_(u"Nessun tag presente"), settings.text_color)
         if s.lyric:
             try:
-                text=s.lyric.get(current_position)
-                if text:
+                tt=s.lyric.get(current_position)
+                if tt:
                     y=0
-                    for i in wrap_text_to_array(text, 'dense', s.main.size[0]):
+                    for i in wrap_text_to_array(tt, 'dense', s.main.size[0]):
                         text_center(s.main,80+(12*y),to_unicode(i),settings.lyrics_color,'dense')
                         y+=1
                     #if s.backlight_on: e32.reset_inactivity()
