@@ -38,7 +38,7 @@ import traceback
 #traceback.print_exc()
 #import imp
 
-__shell__ = 1
+__shell__ = 1 #if script is run by python shell
 __version__ = 1.053
 __version_info__ = (1, 05, 03, '--/--/2010')
 __author__ = "MemoryN70 <memoryS60@gmail.com>"
@@ -471,7 +471,7 @@ ALIGNMENT_DOWN = 8
 ALIGNMENT_MIDDLE = 16
 ALIGNMENT_UP = 32
 #text(c, (30,30), u"Ciao"*5, alignment = 1, width = 160, cut = 1)
-def text(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN, cut = 0, width = None):
+def text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN, cut = 0, width = None):
         """ Draw text defining its properties and alignment
         By default the text is drawn in the coordinates given (lower left corner) or in the lower left corner of the rectangle coords
         If you want only to draw some text at (x,y) without alignment or other calculations, use Image.text.
@@ -540,84 +540,42 @@ def text(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|AL
 #__author__ = "Mikko Ohtamaa <mikko@redinnovation.com>"
 
 class TextRenderer:
-    """ Simple multi-line text rendering for PyS60 Canvas.
-    
-    TextRenderer remembers the cursor position, allowing you to
-    sequentially add more text.
-    
-    Basic support for wrapping too long lines exists.
-    
-    Example::
-    
-        canvas = appuifw.Canvas()
-        renderer = TextRenderer(canvas)
-        renderer.set_position(50,50)
-        renderer.render_string("Word 1")
-        renderer.render_line("Word 2")
-        renderer.render("Text split\nby new lines")       
-        renderer.render("This is a very long text which is automatically wrapped")
-    """
-    
-    def __init__(self, canvas):
+
+    def __init__(self, canvas, rect = None, start_coords = [0,0], spacing = 1):
         # """ Construct text renderer.
         
         # Inital cursor position is (0, 0). 
              
         # @param canvas appuifw.Canvas instance 
         # """
-        
-        # Used canvas
         self.canvas = canvas
-        
         # Coordinates of the cursor
-        self.coords = [0,0]
-        
-        self.spacing = 1
-        
-    def set_line_spacing(self, spacing):
-        # """ Set Y pixels between text lines.
-        
-        # """
+        self.coords = start_coords
+        if not rect:
+            self.rect = self.canvas.size
+        else:
+            self.rect = rect
         self.spacing = spacing
-                
-    def set_position(self, coords):
-        # """ Set the position of the cursor.
-        
-        # @param coords [X,Y] sequence
-        # """
-        self.coords = coords
-        
-    def move_cursor(self, x, y):
-        # """ Set cursor position relative to the current coordinates.
-        
-        # """
-        self.coords[0] += x
-        self.coords[1] += y
-        
+
     def render_string(self, text, font, fill):
       #  """ Render a line and moves cursor right. """
         bounding, to_right, fits = self.canvas.measure_text(text, font=font)
-        self.canvas.text([self.coords[0], self.coords[1] - bounding[1]], unicode(text), font=font, fill=fill)
+        self.canvas.text([self.coords[0], self.coords[1] - bounding[1]], text, font=font, fill=fill)
         self.coords = [self.coords[0] + to_right, self.coords[1]]
         
     def render_line(self, text, font, fill):
         # """ Render one line of text.
-        
         # Moves cursor below.
-        
-        # @param line string
-        # """
-            
         bounding, to_right, fits = self.canvas.measure_text(text, font=font)
         
         # canvas.text coordinates are the baseline position of the rendered
         # text. It's not top left position.
-        self.canvas.text([self.coords[0], self.coords[1] - bounding[1]], unicode(text), font=font, fill=fill)
+        self.canvas.text([self.coords[0], self.coords[1] - bounding[1]], text, font=font, fill=fill)
         
         # Move cursor one line below
         self.coords = [self.coords[0], 
                        self.coords[1] - bounding[1] + bounding[3] + self.spacing                       
-                       ]
+                      ]
 
     def chop(self, text, font, width):
         # """ Wrap text to lines. 
@@ -662,18 +620,7 @@ class TextRenderer:
         
         return lines
         
-    def render(self, text, font=(u"normal", 14), fill=0x000000):
-        # """ Render a piece of text.
-        
-        # Primitive text wrap support.
-        # @param text: Multiline text
-        # @param font: appuifw font description (optional)
-        # @param fill: appuifw fill description (optional)
-        
-        # @type text: unicode or str
-        # @return None
-        # """
-        #text = unicode(text)        
+    def render(self, text, font=None, fill=0x000000):
         max_width = self.canvas.size[0] - self.coords[0]
         lines = text.split("\n")
         for line in lines:                        
@@ -863,14 +810,9 @@ def text_right(img,y,text,color=(0,0,0),font=None,x=None):
 
 class user_messages:
     def __init__(s):
-        #s.panel=None
-        s.state=0
-    # def draw(s):
-        # if s.panel: ui.draw(s.panel,target=(6,(ui.canvas_image.size[1]/2)-s.panel.size[1]/2))
-    #def toggle_screenshot(s):
-        #s.screenshot=
+        s.state=0 #Used in query()
     def note(s,text,title=u"",timeout=3,_direct_=0): #timeout <=0 equivale al tasto OK: l'utente chiude la finestra
-        cx,cy=ui.canvas_image.size
+        cx,cy=ui.display_size
         linee=text.splitlines()
         to_draw=[]
         try:
@@ -885,14 +827,20 @@ class user_messages:
         panel=Image.new((cx-12,30+(len(to_draw)*12)))
         px,py=panel.size
        # alpha_panel=Image.new((ui.canvas_image.size[0]-12,30+(len(to_draw)*12)),"L")
+       
         try:
+            #TODO: here shouldn't be anymore a try statement (new skin code, always present img object, empty at start)
             panel.blit(grafica.bg_img, target=(-((cx-(cx-12))/2),0))
         except:
             pass
-        max_chr=panel.measure_text(title,settings.mainfont,(cx-14))[2]
-        if len(title)<=max_chr: pass
-        else: title=title[:max_chr-3]+u"..."
-        text_center(panel,11,title,settings.path_color)
+        
+        #max_chr=panel.measure_text(title,settings.mainfont,(cx-14))[2]
+        #if len(title)<=max_chr: pass
+        #else: title=title[:max_chr-3]+u"..."
+        #text_center(panel,11,title,settings.path_color)
+        
+        text_render(panel, (None,None), title, settings.path_color, None, ALIGNMENT_UP|ALIGNMENT_CENTER, 1)
+        
         panel.line([(0,0),((cx-13),0),((cx-13),py-1),(0,py-1),(0,0)],outline=settings.window_border,width=1)
         i=1
         for linea in to_draw:
@@ -903,6 +851,7 @@ class user_messages:
             ui.direct_draw(panel,(6,(cy/2)-py/2))
             del panel
             return
+
         prev=ui.get_state()
         ui.reset_ui()
         ui.switch_allowed=0
@@ -938,38 +887,43 @@ class user_messages:
     def direct_note(s,text,title=u""):
         s.note(text,title,_direct_=1)
     def query(s,text,title=u"",left=None,right=None):
-        cx,cy=ui.canvas_image.size
+        cx,cy=ui.display_size
         s.state=0
         if not left: left=_(u"Ok")
         if not right: right=_(u"Annulla")
         def acc():
             lc.signal()
             s.state=1
-        linee=text.splitlines()
-        to_draw=[]
-        try:
-            #from akntextutils import wrap_text_to_array
-            for linea in linee:
-                t=wrap_text_to_array(linea,u'Nokia Sans SemiBold S60',cx-16)
-                if t!=(): to_draw+=t
-                else: to_draw.append(u"")
-        except: to_draw=linee
-        panel=Image.new((cx-12,30+(len(to_draw)*12)))
+        lines=text.splitlines()
+        #to_draw=[]
+        # try:
+            # for linea in linee:
+                # t=wrap_text_to_array(linea,u'Nokia Sans SemiBold S60',cx-16)
+                # if t!=(): to_draw+=t
+                # else: to_draw.append(u"")
+        # except: to_draw=linee
+        panel=Image.new((cx-12,30+(len(lines)*14)))
         px,py=panel.size
+       # rect = [10,20,px-10,py-20]
         try:
             panel.blit(grafica.bg_img,target=(-((cx-(cx-12))/2),0))
         except:
             pass
-        max_chr=panel.measure_text(title,settings.mainfont,cx-14)[2]
-        if len(title)<=max_chr: pass
-        else: title=title[:max_chr-3]+u"..."
-        text_center(panel,11,title,settings.path_color)
+        #max_chr=panel.measure_text(title,settings.mainfont,cx-14)[2]
+        #if len(title)<=max_chr: pass
+        #else: title=title[:max_chr-3]+u"..."
+        #text_center(panel,11,title,settings.path_color)
+        text_render(panel, (0,0), title, settings.path_color, None, ALIGNMENT_UP|ALIGNMENT_CENTER, 1)
         panel.line([(0,0),(cx-13,0),(cx-13,py-1),(0,py-1),(0,0)],outline=settings.window_border,width=1)
-        i=1
-        for linea in to_draw:
-            panel.text((10,20+(12*i)),linea,fill=settings.text_color,font=u'Nokia Sans SemiBold S60')
+        i=0
+        for line in lines:
+            text_render(panel, (10,20+(14*i)), title, settings.text_color, None)
             i+=1
-        del to_draw,linee
+        #i=1
+        # for linea in to_draw:
+            # panel.text((10,20+(12*i)),linea,fill=settings.text_color,font=u'Nokia Sans SemiBold S60')
+            # i+=1
+        # del to_draw,linee
         # if _direct_:
             # ui.canvas.blit(panel,target=(6,44))
             # del panel
@@ -993,68 +947,6 @@ class user_messages:
         del prev,prev_img,panel
         #s.panel=None
         return s.state
-    def popup_menu(s, list, index = 0, left = None, right = None, center = None):
-        cx,cy=ui.canvas_image.size
-        index=0
-        if not left:
-            left=_(u"Ok")
-        if not right:
-            right=_(u"Annulla")
-        if center:
-            center_caption = center[0]
-            center_cb = center[1]
-        def acc():
-            lc.signal()
-        linee=text.splitlines()
-        for elem in list:
-            if len(elem)>1:
-                pass
-            else:
-                pass
-        panel=Image.new((cx,cy))
-        px,py=panel.size
-        try:
-            panel.blit(grafica.bg_img,target=(-((cx-(cx-12))/2),0))
-        except:
-            pass
-        max_chr=panel.measure_text(title,settings.mainfont,cx-14)[2]
-        if len(title)<=max_chr: pass
-        else: title=title[:max_chr-3]+u"..."
-        text_center(panel,11,title,settings.path_color)
-        panel.line([(0,0),(cx-13,0),(cx-13,py-1),(0,py-1),(0,0)],outline=settings.window_border,width=1)
-        i=1
-        prev=ui.get_state()
-        ui.reset_ui()
-        ui.switch_allowed=0
-        prev_img=Image.new(ui.canvas_image.size)
-        prev_img.blit(ui.canvas_image)
-        lc=e32.Ao_lock()
-        ui.left_key=[acc,left]
-        ui.right_key=[lc.signal,right]
-        ui.bind(63557,acc)
-        ui.draw(panel,target=(6,(cy/2)-py/2))
-        #s.panel=panel
-        #ui.mode_callback=s.draw
-        lc.wait()
-        ui.draw(prev_img)
-        ui.set_state(prev)
-        ui.canvas_refresh()
-        del prev,prev_img,panel
-    # def text_query(s ,text ,title=u"" ,left=None ,right=None):
-# te=txtfield.New((20,20,156,100),cornertype=txtfield.ECorner5,cornerflag=txtfield.ENotTL|txtfield.ENotTR)
-# te.bgcolor(0xdeffde)
-# te.font(u'abc')
-# te.txtcolor(0x880000)
-# te1=txtfield.New((20,120,156,200),cornertype=1)
-# te1.bgcolor(0xffffde)
-# te1.txtcolor(0x000088)
-# te1.font(u'LatinBold13')
-# txtfield.ShadowVector(-1,3)
-# te.shadow(3)
-# te1.shadow(0)
-# te.add(text)
-# te.focus(1)
-# txtfield.RemoveFont(fid)
 
 class progress_dialog:
     def __init__(s,text,title=u"",break_cb=None,actual=0,max=100,step=1):
@@ -1232,7 +1124,7 @@ class _UI:
         appuifw.app.screen = 'full'
         #init canvas
         s.canvas = appuifw.Canvas(redraw_callback = s.canvas_refresh, event_callback = s.key_cb, resize_callback = s.resize_cb)#s.key_driver.handle_event)
-
+        
         #The default screen size in portrait mode (deprecated)
         s.screen_size = s.get_screen_size()
         #The default screen size in landscape mode (deprecated)
@@ -1249,6 +1141,8 @@ class _UI:
         s.touch_screen = 0
         #s.sensor_device = 0
     display_size = property(lambda s: s.canvas.size)
+    # def get_canvas_size(s):
+        # return s.canvas.size
     def get_screen_size(s):
         sz = sysinfo.display_pixels()
         return min(sz),max(sz)
@@ -1487,8 +1381,8 @@ class _UI:
         x,y = img.size
         #y = s.display_size[1] - 3
         #x = s.display_size[0] - 2
-        text(img, (3,y), s.left_key[1], settings.label_color, settings.label_font, ALIGNMENT_DOWN, 1, x/2)
-        text(img, (0,y), s.right_key[1], settings.label_color, settings.label_font, ALIGNMENT_RIGHT, 1, x/2)
+        text_render(img, (3,y), s.left_key[1], settings.label_color, settings.label_font, ALIGNMENT_DOWN, 1, x/2)
+        text_render(img, (0,y), s.right_key[1], settings.label_color, settings.label_font, ALIGNMENT_RIGHT, 1, x/2)
         #img.text((3,y), s.left_key[1] ,settings.label_color, settings.label_font)
         #text_right(img, y, s.right_key[1], settings.label_color, settings.label_font, x)
         # if s.sx_btn:
@@ -1754,13 +1648,13 @@ class Menu:
             ty = (self.y + 17) + i19
             #self.menu_img.text((10,ty), mn.title, settings.text_color)#u'Nokia Sans SemiBold S60')u'LatinBold12'
             #self.menu_img.rectangle((4, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), 0,0)
-            text(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.title, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE, 1)
+            text_render(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.title, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE, 1)
             if mn.shortcut:
                 #text_right(self.menu_img, ty, mn.shortcut, settings.text_color, u'Nokia Sans SemiBold S60', mx-8)
-                text(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.shortcut, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
+                text_render(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.shortcut, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
             if mn.submenu:
                 #self.menu_img.polygon([mx-13,((self.y + 7) + i19),mx-13,((self.y + 19) + i19),mx-7,((self.y + 13) + i19)], fill=settings.text_color)
-                text(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), u">", settings.text_color, (None, self.text_height*1.15), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
+                text_render(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), u">", settings.text_color, (None, self.text_height*1.15), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
             i += 1
 
         if self.sm:
@@ -2170,7 +2064,7 @@ class GrafList:
         else:
             selected_element=s.elements[s.position+s.page]
             #text_cut(s.list_image, (3,11) , selected_element.title, settings.path_color)
-            text(s.list_image, (3,11), selected_element.title, settings.path_color, None, ALIGNMENT_UP, 1)
+            text_render(s.list_image, (3,11), selected_element.title, settings.path_color, None, ALIGNMENT_UP, 1)
             s.list_image.blit(grafica.csel_img, target = (0,(36*s.position)+15), mask=grafica.csel_img_mask)
             i=0
             for elemento in s.elements[s.page:s.page+s.elem_page]:
@@ -3644,13 +3538,8 @@ class mini_viewer:
         else:
             s.sleeping=1
     def carica_immagine(s):
-        #s.loading_error=None
         s.stats = [0,0]
         s.fimg = None
-        # try:
-            # del s.fimg
-        # except:
-            # pass
         try:
             try:
                 rm=sysinfo.free_ram()
@@ -3664,16 +3553,12 @@ class mini_viewer:
             except:
                 pass
         except Exception, e:
-            #s.loading_error=[u"%s"%s.error_loading[:-4],u"%s"%e]
-            #s.ram_used=0
-            #s.time_used=0
             s.fimg = Image.new(s.img.size)
             s.fimg.clear(0)
-            #s.fimg.text((35,20),u"%s"%s.error_loading[:-4],fill=(255,0,0))
-            #s.fimg.text((25,32),u"%s"%e,fill=(0,0,255))
-            text_center(s.fimg, (s.fimg.size[1]/2)-10 ,_(u"Immagine non valida!"),(255,0,0))
-            #s.fimg=text_center(s.fimg, (s.fimg.size[1]/2)+10 ,u"%s"%e[(s.fimg.measure_text(unicode(e),u"Default",s.fimg.size[0])):],(0,0,255),u"Default")
-            text_cut(s.fimg, (2,(s.fimg.size[1]/2)+10) , unicode(e), (0,0,255))
+            #text_center(s.fimg, (s.fimg.size[1]/2)-10 , _(u"Immagine non valida!"),(255,0,0))
+            text_render(s.fimg, (0, (s.fimg.size[1]/2)-10), _(u"Immagine non valida!"), (255,0,0), alignment = ALIGNMENT_CENTER)
+            #text_cut(s.fimg, (2,(s.fimg.size[1]/2)+10) , unicode(e), (0,0,255))
+            text_render(s.fimg, (2,(s.fimg.size[1]/2)+10), unicode(e), (0,0,255), alignment = ALIGNMENT_CENTER, cut = 1)
         s.caricato=1
         s.fit_to_screen_resize()
         s.create_image()
@@ -3733,8 +3618,8 @@ class mini_viewer:
         s.img.blit(s.fimg,target=( dxxf + s.x, dyyf + s.y, dx-dxxf + s.x, dy - dyyf + s.y), scale=1)
     def redraw_img(s,info=0):
         x,y=ui.canvas_image.size
+        ui.canvas_image.clear(0)
         if s.caricato:
-            ui.canvas_image.clear(0)
             ui.canvas_image.blit(luminosita(s.img,s.brightness))
             if info:
                 text_cut(ui.canvas_image,(2,12),s.name,fill=0x00ff00)
@@ -3743,9 +3628,9 @@ class mini_viewer:
                 if s.images_in_dir:
                     text_center(ui.canvas_image,y-4,u"%i / %i"%(s.index+1,len(s.images_in_dir)),0x00ff00)
         else:
-            ui.canvas_image.clear(0)
             #ui.canvas_image.text((5,20),_(u"Caricamento ..."),fill=(255,255,255),font=(None,16,16))
-            text_center(ui.canvas_image, y/2, _(u"Caricamento ..."), (255,255,255), (None,16,16))
+            #text_center(ui.canvas_image, y/2, _(u"Caricamento ..."), (255,255,255), (None,16,16))
+            text_render(ui.canvas_image, (0, y/2), _(u"Caricamento ..."), (255,255,255), (None,16,16), ALIGNMENT_CENTER)
         if ui.menuopened:
             ui.menu.update_background(ui.canvas_image)
         ui.canvas_refresh()
@@ -3907,7 +3792,8 @@ class mini_viewer:
         s.create_image()
         s.redraw_img()
     def set(s,n,v,r=0,i=1):
-        if v==None: return
+        if v==None:
+            return
         if v=="switch":
             vo=eval("s.%s"%n)
             if vo:
@@ -3917,31 +3803,29 @@ class mini_viewer:
         else:
             exec("s.%s=%s"%(n,v))
         if r:
-            if r==2: s.create_image()
+            if r==2:
+                s.create_image()
             s.redraw_img(i)
-            if i: s.hide_info()
-    def lum_up(s):#,key=1):
-        if s.brightness>=100: return
+            if i:
+                s.hide_info()
+    def lum_up(s):
+        if s.brightness>=100:
+            return
         s.brightness+=5
-        #if not key: e32.ao_sleep(0.2) #Diamo tempo di agire il callback del canvas se da menu
-        #e32.ao_sleep(0.2)
         s.redraw_img(1)
         s.hide_info()
-        #s.osd_timer.cancel()
-        #s.osd_timer.after(2,lambda: s.redraw_img((),info=0))
-    def lum_down(s):#,key=1):
-        if s.brightness<=-100: return
+    def lum_down(s):
+        if s.brightness<=-100:
+            return
         s.brightness-=5
-        #if not key: e32.ao_sleep(0.2)
-        #e32.ao_sleep(0.2)
         s.redraw_img(1)
         s.hide_info()
-        #s.osd_timer.cancel()
-        #s.osd_timer.after(2,lambda: s.redraw_img((),info=0))
     def hide_info(s):
         s.osd_timer.cancel()
-        s.osd_timer.after(2,s.redraw_img)
+        s.osd_timer.after(2, s.redraw_img)
     def edit(s):
+        # Open the image editor application
+        #TODO: option to define the personal app. On 3rd 5th?
         s.sleeping=1
         e32.start_exe(u'apprun.exe',u'Z:\\System\\Apps\\ImageEditor\\ImageEditor.app O"%s"'%s.file)
 
@@ -3949,8 +3833,6 @@ class lrc:
         def __init__(s,fn):
             s.L=[]
             s.total=0
-            # if not fn:
-                # return
             t=[]
             s.C=(s.load(fn)).splitlines()
             for i in s.C:
@@ -4400,7 +4282,7 @@ class mini_player:
         except:
             state,volume,duration,current_position=0,0,0,0
         #text_cut(s.main, (2,13) , u'%s' % (s.filename), settings.text_color, None)
-        text(s.main, (2, None), u'%s' % (s.filename), settings.text_color, None, ALIGNMENT_UP, 1)
+        text_render(s.main, (2, None), u'%s' % (s.filename), settings.text_color, None, ALIGNMENT_UP, 1)
         if s.tags:
             s.main.text((6,40),u'%s: %s' % (_(u"Titolo"),s.title), settings.text_color)
             s.main.text((6,52),u'%s: %s' % (_(u"Artista"),s.artist), settings.text_color)
@@ -5432,11 +5314,12 @@ class color_init:
         s.bind()
         s.color_running = 1
         s.color=None
-        appuifw.app.exit_key_handler = s.quit_color
+        #haha chissà cosa ci faceva questo...strana cosa!
+        #appuifw.app.exit_key_handler = s.quit_color
         #s.disegna_color()
         ff00 = xrange(0xff, -1, -0x33)
         s.pal = [(r,g,b) for r in ff00 for g in ff00 for b in ff00]  # web-safe 216 colors
-        s.map_j = xrange(0,12,2)+xrange(11,0,-2)  # make better grouping
+        s.map_j = range(0,12,2)+range(11,0,-2)  # make better grouping
         while s.color_running:
            s.black_white ^= 0x1  # toggle
            #s.clear_box(s.black_white)
@@ -5453,54 +5336,68 @@ class color_init:
         ui.bind(EScancodeSelect,s.ok_color)
         ui.bind(EScancode5,s.get_rgb)
         if ui.landscape==2:
-            ui.bind(63496,s.up_color)
-            ui.bind(63495,s.down_color)
-            ui.bind(63498,s.right_color)
-            ui.bind(63497,s.left_color)
+            ui.bind(EScancodeRightArrow,s.up_color)
+            ui.bind(EScancodeLeftArrow,s.down_color)
+            ui.bind(EScancodeDownArrow,s.right_color)
+            ui.bind(EScancodeUpArrow,s.left_color)
         elif ui.landscape==1:
-            ui.bind(63495,s.up_color)
-            ui.bind(63496,s.down_color)
-            ui.bind(63497,s.right_color)
-            ui.bind(63498,s.left_color)
+            ui.bind(EScancodeLeftArrow,s.up_color)
+            ui.bind(EScancodeRightArrow,s.down_color)
+            ui.bind(EScancodeUpArrow,s.right_color)
+            ui.bind(EScancodeDownArrow,s.left_color)
         else:
-            ui.bind(63497,s.up_color)
-            ui.bind(63498,s.down_color)
-            ui.bind(63496,s.right_color)
-            ui.bind(63495,s.left_color)
+            ui.bind(EScancodeUpArrow,s.up_color)
+            ui.bind(EScancodeDownArrow,s.down_color)
+            ui.bind(EScancodeRightArrow,s.right_color)
+            ui.bind(EScancodeLeftArrow,s.left_color)
     def quit_color(s):
         s.color_running = 0
     def left_color(s):
-        if s.xc > 0: s.xc -= 1
+        if s.xc > 0:
+            s.xc -= 1
     def right_color(s):
-        if s.xc < 17: s.xc += 1
+        if s.xc < 17:
+            s.xc += 1
     def up_color(s):
-        if s.yc > 0: s.yc -= 1
+        if s.yc > 0:
+            s.yc -= 1
     def down_color(s):
-        if s.yc < 11: s.yc += 1
+        if s.yc < 11:
+            s.yc += 1
     def ok_color(s,clr=None):
-        if clr: s.color=clr
-        else: s.color = s.pal[18*s.map_j[s.yc] + s.xc]
-        if s.mode==0: settings.text_color=s.color
-        elif s.mode==1: settings.label_color=s.color
-        elif s.mode==2: settings.path_color=s.color
+        if clr:
+            s.color=clr
+        else:
+            s.color = s.pal[18*s.map_j[s.yc] + s.xc]
+        if s.mode==0:
+            settings.text_color=s.color
+        elif s.mode==1:
+            settings.label_color=s.color
+        elif s.mode==2:
+            settings.path_color=s.color
     def get_rgb(s):
         try:
-            if s.color: r,g,b=(appuifw.query(_(u"Inserire R,G,B del colore preferito",'text',u'%i,%i,%i')%s.color)).split(',')
-            else: r,g,b=(appuifw.query(_(u"Inserire R,G,B del colore preferito",'text',u'%i,%i,%i')%(0,0,0))).split(',')
+            if s.color:
+                r,g,b=(appuifw.query(_(u"Inserire R,G,B del colore preferito",'text',u'%i,%i,%i')%s.color)).split(',')
+            else:
+                r,g,b=(appuifw.query(_(u"Inserire R,G,B del colore preferito",'text',u'%i,%i,%i')%(0,0,0))).split(',')
             r=int(r)
             g=int(g)
             b=int(b)
             for i in [r,g,b]: 
-                if i>255 or i<0: raise
+                if i>255 or i<0:
+                    raise
             s.ok_color((r,g,b))
-        except: pass
+        except:
+            pass
     def disegna_color(s):
         ui.canvas_image.blit(grafica.bg_img)
         if ui.landscape:
             x=20
         else:
             x=6
-        if s.black_white: ui.canvas_image.rectangle([(9*s.xc+x, 9*s.yc+17), (9*s.xc+10+x, 9*s.yc+27)], 0)
+        if s.black_white:
+            ui.canvas_image.rectangle([(9*s.xc+x, 9*s.yc+17), (9*s.xc+10+x, 9*s.yc+27)], 0)
         for j in xrange(12):
           for id in xrange(18):
             k = 18*s.map_j[j] + id
@@ -5517,21 +5414,20 @@ class color_init:
                 ui.canvas_image.text((2,158),_(u"Premere 5 per inserimento manuale"),fill=settings.text_color)
 
 class open_with:
-    def __init__(s):
-        try: s.pred_ext=os.path.splitext(explorer.get_file())[1]
-        except: s.pred_ext=None
-        if not s.pred_ext: s.pred_ext=".ext"
+    def __init__(s, ext = None):
+        try:
+            s.pred_ext=os.path.splitext(explorer.get_file())[1]
+        except:
+            s.pred_ext=ext
+        if not s.pred_ext:
+            s.pred_ext=".ext"
         ui.save_state()
         s.old_listbox_param=ListBox.save()
         try:
-            #import msys#applist
-            s.tot_applicazioni=msys.listapp()#applist.applist()
+            s.tot_applicazioni=msys.listapp()
         except:
             s.tot_applicazioni=[]
-            #appuifw.note(u"Libreria msys non trovata o non funzionante!","error")
             user.note(_(u"Impossibile avviare %s.\nReinstallare l'applicazione o il modulo.")%"msys")
-            #appuifw.note(u"Segnalare il problema sul forum...\nVer: "+str(__version__),"error")
-            #return
         s.view_ext()
     def app_selection(s,app_list=[]):
         if not app_list: return

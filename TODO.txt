@@ -9,6 +9,7 @@ GRAPHICS:
 
 MAIN GOALS:
 
+- IMAGE VIEWER: works only if the image is corrupted (it is the same of a normal image, but the image contains error code)
 - !! resolution callback !! (Split with the 2nd ed. system???)
 - akntextutils: new module in C++ like the old but with support to every font and ported to 3rd ed. Or another module in pure python (slower)
 - new text stream (lines in a text viewer or note popup) object: it should adapt line spacing (height) for every resolution and aspect
@@ -34,7 +35,7 @@ Permit updates also if not main release (warning user about these betas). (Syste
 IDEAS:
 
 - multiple windows/tabs
-- 
+- menu and other popups should have a separate "panel" image blit on the canvas every refresh to simplify the management during i.e. continuos canvas refresh.
 
 Small issues:
 
