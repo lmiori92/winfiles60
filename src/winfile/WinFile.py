@@ -303,33 +303,8 @@ class Button:
         
     def init_values(s):
         #Initialize coords and other values
-        #if s.position[2]==None:
         bbox = TEST_IMG.measure_text(s.caption, s.font, s.max_width)[0]
         s.coords = [(s.position[0]+bbox[0], s.position[1]+bbox[1]),(s.position[0]+bbox[2], s.position[1]+bbox[3])]
-
-        #else:
-        #    s.coords = [(s.position[0], s.position[1]),(s.position[0]+s.position[2], s.position[1]-s.position[3])]
-            #print "Button", s.coords
-            #w = abs(bbox[2]-bbox[0])
-            #h = abs(bbox[3])+abs(bbox[1])
-            
-            #s.coords = [ (w+s.position[0], s.position[1]-h), s.position[0:2]  ]
-            #s.coords = [(s.position[0], s.position[1]-h), (s.position[0]+w,s.position[1])]
-            #s.rect = [(0,0),(w,-h)]
-            #s.rect = [ s.position[:2], (-bbox[0],+bbox[1]) ]
-       #     o=(s.position[0]-bbox[0],s.position[1]-bbox[1])
-            #s.rect = [(0,0), ]
-        
-            #s.rect = [(o[0]+bbox[0],o[1]+bbox[1]),(o[0]+bbox[2],o[1]+bbox[3])]
-        # Draw the bounding box of the text as returned by measure_text
-        #c.rectangle((o[0]+bbox[0],o[1]+bbox[1],o[0]+bbox[2],o[1]+bbox[3]),outline=0x00ff00) 
-            #s.rect = [(s.rect[0], s.rect[1]), (s.rect[2], s.rect[3])]
- #       else:
-            #s.rect = [ (0,0), (s.position[2],s.position[3]) ]
-#            s.coords = [ (s.position[2]+s.position[0], s.position[1]-s.position[3]), s.position[0:2]  ]
-        
-        #s.coords = [ (s.rect[0]+bbox[0],s.rect[1]+bbox[1]), (s.rect[0]+bbox[2],s.rect[1]+bbox[3]) ]
-        #print s.coords#, s.rect
         
     def set_touch(s):
     
@@ -381,17 +356,19 @@ class ScrollBar:
         s.bar_outline_color = 0 #or None
         s.max_value = 100
         s.min_value = 0
-        s.actual_value = 0
+        s.max_page = 10
+        s.current = 0
         s.sensitivity = .05 # touch area is 5 % bigger than the bar to increase sensitivity
         #Calculation of some values
-        s.init_values()
+        #s.init_values()
         s.callback = cb #the function that is called at every user input
         # if s.feedback:
             #set touch screen feedback
             # s.set_touch()
     def set_touch(s, canvas):
 
-        if ui.touch_screen: ui.bind_touch(EDrag, s.touch_event, s.coords_touch)
+        if ui.touch_screen:
+            ui.bind_touch(EDrag, s.touch_event, s.coords_touch)
 
     def touch_event(s, pos):
     
@@ -403,22 +380,16 @@ class ScrollBar:
         elif s.orientation == 'horizontal':
             unit = abs(pos[0]-s.coords[0][0])
             scale = range / s.rect[1][0]
-        #if s.type == 'statusbar':
-        #print "Moved to:",pos , unit
-        val = unit * scale
+
+        val = int(unit * scale)
         if val>s.max_value: #TODO: use max() / min()
             val = s.max_value
         if val<s.min_value:
             val = s.min_value
-        s.actual_value = int(val)
-            #print val
-            
-        if s.callback:
-            s.callback(s.actual_value)
+        s.current = val
 
-    def set_default(s):
-        # not to be implemented there. Only in main app!
-        init_values()
+        if s.callback:
+            s.callback(s.current)
 
     def init_values(s):
         #Initialize coords and other values
@@ -436,11 +407,11 @@ class ScrollBar:
         s.coords_touch = [ (int(s.position[0] * (1.00-s.sensitivity)), int(s.position[1] * (1.00-s.sensitivity))),
                            (int((s.rect[1][0]+s.position[0]) * (1.00+s.sensitivity)), int((s.rect[1][1]+s.position[1]) * (1.00+s.sensitivity)))
                          ]
-        print s.coords, s.rect
+        #print s.coords, s.rect
 
     def percentage(s):
     
-        return float(s.actual_value) / s.max_value * 100.0
+        return float(s.current) / s.max_value * 100.0
     
     def draw(s, img):
         #Background
@@ -450,17 +421,15 @@ class ScrollBar:
         if s.orientation == 'vertical':
                 # x = const
             dy = s.rect[1][1]
-            yi = y + int(dy / range * s.actual_value)
-            yf = yi + int(dy / range * s.max_value)
+            yi = y + int(dy / range * s.current)
+            yf = yi + int(dy / range * s.max_page)
             img.rectangle( (x, yi, s.coords[1][0], yf), s.bar_outline_color, s.bar_fill_color)
-        else:#if s.orientation == 'horizontal':
+        else:
                 # y = const
             dx = s.rect[1][0]
-            xi = x + int(dx / range * s.actual_value)
-            xf = xi + int(dx / range * s.max_value)
+            xi = x + int(dx / range * s.current)
+            xf = xi + int(dx / range * s.max_page)
             img.rectangle( (xi, y, xf, s.coords[1][1]), s.bar_outline_color, s.bar_fill_color)
-        # elif s.orientation == 'horizontal':
-            # s.img.rectangle( (s.position, (s.position[0]+int(s.rect[1][0]*perc), s.coords[1][1]) ), s.bar_outline_color, s.bar_fill_color)
         #Draw border
         img.rectangle(s.coords, s.bg_outline_color)#, None)
 
@@ -470,7 +439,7 @@ ALIGNMENT_RIGHT = 4
 ALIGNMENT_DOWN = 8
 ALIGNMENT_MIDDLE = 16
 ALIGNMENT_UP = 32
-#text(c, (30,30), u"Ciao"*5, alignment = 1, width = 160, cut = 1)
+
 def text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN, cut = 0, width = None):
         """ Draw text defining its properties and alignment
         By default the text is drawn in the coordinates given (lower left corner) or in the lower left corner of the rectangle coords
@@ -501,10 +470,9 @@ def text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_
         else:
             #Rect
             #TODO: improve calculation...some optimizations
-            x1,y1,x2,y2 = coords#coords[0][0], coords[0][1], coords[1][0], coords[1][1]
+            x1,y1,x2,y2 = coords
             x = max(x1,x2)-min(x1,x2) #x width
             y = max(y1,y2)-min(y1,y2) #y height
-            #print y, coords
             #in this case initial pos (of the text) is the lower left corner
             xf, yf = min(x1,x2), max(y1,y2)
             #First coord of the rect (upper left corner)
@@ -1795,10 +1763,12 @@ class LType:
 
 class GrafList:
 #Listbox controller
-    def __init__(s,sel_cb=None,left_cb=None,right_cb=None):
+    def __init__(s):#,sel_cb=None,left_cb=None,right_cb=None):
         s.no_data=_(u"Nessun elemento")
         s.position,s.page=0,0
-        s.sel_cb,s.left_cb,s.right_cb=sel_cb,left_cb,right_cb
+        s.sel_cb=None
+        s.left_cb=None
+        s.right_cb=None#sel_cb,left_cb,right_cb
         s.elements=[]
         s.selected=[]
         s.mode_cb=None
@@ -1806,19 +1776,15 @@ class GrafList:
         s.element_size = 40 #NOT DEFINED; EXAMPLE!!!
 
         s.elem_page=int(ui.display_size[1]/s.element_size)
+
         s.list_image=Image.new(ui.display_size)
         
         s.scroll_bar = ScrollBar(s.select_item)
-        s.scroll_bar.position = (ui.display_size[0]-10,20,ui.display_size[1]-41,15)
+        s.scroll_bar.position = (ui.display_size[0]-20,20,ui.display_size[1]-41,15)
         s.scroll_bar.orientation = 'vertical'
-        # s.vol_bar.lenght = 200
-        # s.vol_bar.height = 20
-        #s.scroll_bar.max_value = 10
+        s.scroll_bar.max_page = s.elem_page
         s.scroll_bar.init_values()
 
-        #s.old_mode=ui.landscape
-        #s.x,s.y=s.list_image.size
-        #s.size_zoom=100
         s.cbind()
     def screen_change(s):
         #if ui.landscape:
@@ -1828,7 +1794,8 @@ class GrafList:
         #    s.elem_page=5
         s.elem_page=int(ui.display_size[1]/s.element_size)
         s.list_image=Image.new(ui.display_size)
-        s.scroll_bar.position = (ui.display_size[0]-10,20,ui.display_size[1]-41,15)
+        s.scroll_bar.position = (ui.display_size[0]-20,20,ui.display_size[1]-41,15)
+        s.scroll_bar.max_page = s.elem_page
         s.scroll_bar.init_values()
         #s.x,s.y=s.list_image.size
         #if (ui.landscape!=s.old_mode): s.position,s.index,s.page=0,0,0
@@ -1837,15 +1804,15 @@ class GrafList:
         s.position,s.page=0,0
         s.select_item(i)
         s.cbind()
-        if s.mode_cb!=None: s.mode_cb()
+        if s.mode_cb!=None:
+            s.mode_cb()
         s.redrawlist()
     def bind(s,**args):
         ui.bind(args)
     def current(s):
-        return s.position+s.page
+        return s.position + s.page
     def select_item(s,i,r=1):
         s.position,s.page=0,0
-        #s.selected=[]
         ln=len(s.elements)
         if not ln:
             if r:
@@ -1861,7 +1828,6 @@ class GrafList:
                             if s.position>=(ln-1):
                                 break
             except:
-                #print "Errore in while s.position<len(s.elements):"
                 s.position=0
         else:
             if (not i>(ln-1)):
@@ -2106,9 +2072,11 @@ class GrafList:
                 # q=15 + int(ratio*s.page)
                 # qp=q + int(ratio*s.elem_page)
                 # s.list_image.rectangle((xa,q,xb,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
-                s.scroll_bar.max_value = elen - s.elem_page
-                s.scroll_bar.actual_value = s.page
+                s.scroll_bar.max_value = elen
+                s.scroll_bar.current = s.page
+
                 s.scroll_bar.draw(s.list_image)
+
                 #s.list_image.polygon((xa,q,xb,q,xb,qp,xa,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
         #Draw on screen
         ui.draw(s.list_image)
@@ -6716,6 +6684,8 @@ class _main_:
         explorer.set_inputs_type()
         if to_elem:
             ListBox.select_item(to_elem)
+    def ask_to_quit(s):
+        user.query(_(u"Vuoi veramente uscire da WinFile?"), _(u"Arrivederci"))
     def quit(s,restart=0):
         #e32.ao_sleep(0.1)
         #print ui.landscape
