@@ -30,3 +30,36 @@ listbox class
 
 
 '''
+
+
+
+class TouchDriver:
+'''
+
+vediamo di scrivere qualche idea...
+
+Cosa deve fare la classe? 
+- gestire il touch su una determinata area ben definita (rect) (non semplicemente un tocco ovviamente, per quello ui.bind_touch)
+- e...qui dipende dall'uso che se ne vuole fare ovvero (casi...):
+
+1) All'interno dell'area bisogna sapere se l'utente preme con un tocco semplice, oppure se effettua uno scroll (e quindi definire la sua direzione)
+    Utilizzi-esempi: scrolling immagini (su-giu: zoom; destra-sinistra: cambio immagine), scrolling canzoni, volume...
+2) All'interno dell'area ci sono elementi (icone, liste,...) e ogni elemento ha una ben definita grandezza. L'utente può selezionare un elemento e, se la lista è lunga, può effettuare
+lo scrolling in varie direzioni ben definite.
+    Utilizzi: menu, listbox e altro
+
+3) 
+
+Essa deve avere:
+
+- magari può ricorrrere a ui.bind_touch per la gestione del touch (in particolare per il callback di una specifica area; la funzione di callback riceve la coordinata dello stilo)
+- funzione di controllo input touch (e prime considerazioni come direzione e tipo)
+- funzione di callback che deve dare dati ben ordinati in uscita
+- deve poter essere usata anche con più istanze contemporanee (beh non è un problema :))
+- deve comunque essere più leggera e ottimizzata possibile
+- non deve essere legata ad immagini o canvas
+
+'''
+    def __init__(s):
+    
+    

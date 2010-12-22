@@ -127,8 +127,9 @@ except:
     traceback.print_exc()
 # try:
     # from akntextutils import wrap_text_to_array
+    
 # except:
-    # print "no akntextutils!"
+    # print "Please install akntextutils to boost some programm features!"
     # def wrap_text_to_array(a,b,c): return [a]
 try:
     import appswitch
@@ -196,11 +197,11 @@ class StatusBar:
         s.formatter = int #This is important. It is used to round a value to have better ui style
         s.callback = cb #If set, use this in some functions instead of ScrollBar.draw()
 
-    def set_touch(s, canvas):
+    def set_touch(s):
 
         if ui.touch_screen: ui.bind_touch(EDrag, s.touch_event, s.coords_touch)
 
-    def unset_touch(s, canvas):
+    def unset_touch(s):
 
         if ui.touch_screen: ui.unbind_touch(EDrag, None, s.coords_touch)
 
@@ -317,7 +318,7 @@ class Button:
         #canvas.bind(EButton1Up, s.draw) #Warning: this isn't safe!!!
         ###
         
-    def unset_touch(s, canvas):
+    def unset_touch(s):
         pass
         
     def pressed(s, pos):
@@ -346,10 +347,10 @@ class ScrollBar:
 #A class to manage screen bars, with touch event support
 #by Memory
 #Version: 0.1 alpha
-    def __init__(s, cb=None):
+    def __init__(s, cb = None):
 
-        s.orientation = 'horizontal' # or horizontal
-        s.position = (0,0,100,10) #position of the first edge on the bar
+        s.orientation = 'horizontal' # or vertical
+        s.position = (0,0,100,10) #x,y coord and height, lenght
         s.bg_fill_color = None #None if no background (transparent), otherwise a color
         s.bg_outline_color = 0
         s.bar_fill_color = 0 #or None for transparent
@@ -365,7 +366,7 @@ class ScrollBar:
         # if s.feedback:
             #set touch screen feedback
             # s.set_touch()
-    def set_touch(s, canvas):
+    def set_touch(s):
 
         if ui.touch_screen:
             ui.bind_touch(EDrag, s.touch_event, s.coords_touch)
@@ -508,8 +509,12 @@ def text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_
 #__author__ = "Mikko Ohtamaa <mikko@redinnovation.com>"
 
 class TextRenderer:
-
-    def __init__(self, canvas, rect = None, start_coords = [0,0], spacing = 1):
+    """
+        TextRenderer draws text on a given image, at a given coords and in a given rect of the image. Also spacing defining is possible.
+        Original author:  "Mikko Ohtamaa <mikko@redinnovation.com>"
+        Modifications and improvements: "MemoryN70 <memoryS60@gmail.com>"
+    """
+    def __init__(self, canvas, start_coords = [0,0], rect = None, spacing = 0):
         # """ Construct text renderer.
         
         # Inital cursor position is (0, 0). 
@@ -520,7 +525,7 @@ class TextRenderer:
         # Coordinates of the cursor
         self.coords = start_coords
         if not rect:
-            self.rect = self.canvas.size
+            self.rect = [0,0,self.canvas.size[0],self.canvas.size[1]]
         else:
             self.rect = rect
         self.spacing = spacing
@@ -535,11 +540,11 @@ class TextRenderer:
         # """ Render one line of text.
         # Moves cursor below.
         bounding, to_right, fits = self.canvas.measure_text(text, font=font)
-        
+
         # canvas.text coordinates are the baseline position of the rendered
         # text. It's not top left position.
         self.canvas.text([self.coords[0], self.coords[1] - bounding[1]], text, font=font, fill=fill)
-        
+
         # Move cursor one line below
         self.coords = [self.coords[0], 
                        self.coords[1] - bounding[1] + bounding[3] + self.spacing                       
@@ -587,10 +592,16 @@ class TextRenderer:
             text_left = text_left[len(slice)+adjust:]
         
         return lines
-        
-    def render(self, text, font=None, fill=0x000000):
+ # text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN, cut = 0, width = None):
+    def render_text(self, text, fill=0, font=None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN):
         max_width = self.canvas.size[0] - self.coords[0]
         lines = text.split("\n")
+        for line in lines:                        
+            chopped_lines = self.chop(line, font, max_width)
+            for chopped_line in chopped_lines:
+                self.render_line(chopped_line, font, fill)
+    def render_lines(self, lines, fill=0, font=None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN):
+        max_width = self.canvas.size[0] - self.coords[0]
         for line in lines:                        
             chopped_lines = self.chop(line, font, max_width)
             for chopped_line in chopped_lines:
@@ -685,8 +696,8 @@ def inverti_bn(img):
     img1.blit(img,mask=maschera)
     return img1
 def crea_icone(file_aif):
-    #'''Ritorna icona e maschera di un applicazione'''
-    images=[]
+    #Reads an aif file and returns icon and its mask
+    images = []
     txt = open(file_aif).read()
     count=0
     while 1:
@@ -719,16 +730,18 @@ def crea_icone(file_aif):
         i=images[1]
     return images[0],i
 def get_UID(app):
-    f=open(app)
-    uid1,uid2,uid3=map(lambda x: hex(x).strip('L'),struct.unpack('LLL',f.read(12)))
+    f = open(app)
+    uid1,uid2,uid3 = map(lambda x: hex(x).strip('L'),struct.unpack('LLL',f.read(12)))
     f.close()
     return uid1,uid2,uid3
 def luminosita(img,perc):
-    if perc==0: return img
+    if not perc:
+        return img
     maschera=Image.new(img.size,"L")
     immagine=Image.new(img.size)
     perc=int(perc*2.55)
-    if perc>0: immagine.clear((255,255,255))
+    if perc>0:
+        immagine.clear((255,255,255))
     else:
         perc=-perc
         immagine.clear((0,0,0))
@@ -743,10 +756,10 @@ def blur(img, val):
     im.blit(img)
     mask = Image.new(img.size, 'L')
     mask.clear((val, val, val))
-    img.blit(im, target=(1,0), mask=mask)
-    img.blit(im, target=(0,1), mask=mask)
-    img.blit(im, target=(-1,0), mask=mask)
-    img.blit(im, target=(0,-1), mask=mask)
+    img.blit(im, target=(1,0), mask= mask)
+    img.blit(im, target=(0,1), mask= mask)
+    img.blit(im, target=(-1,0), mask= mask)
+    img.blit(im, target=(0,-1), mask= mask)
 def text_center(img,y1,testo, fil=(0,0,0), font=None): #Centra testo
     x = img.size[0]
     l = img.measure_text(testo, font)[1]
@@ -1764,42 +1777,39 @@ class LType:
 class GrafList:
 #Listbox controller
     def __init__(s):#,sel_cb=None,left_cb=None,right_cb=None):
-        s.no_data=_(u"Nessun elemento")
-        s.position,s.page=0,0
-        s.sel_cb=None
-        s.left_cb=None
-        s.right_cb=None#sel_cb,left_cb,right_cb
-        s.elements=[]
-        s.selected=[]
-        s.mode_cb=None
-
+        s.no_data = _(u"Nessun elemento")
+        s.position = 0
+        s.page = 0
+        s.sel_cb = None
+        s.left_cb = None
+        s.right_cb = None
+        s.elements = []
+        s.selected = []
+        s.mode_cb = None
+        s.scroll_bar = ScrollBar(s.select_item)
+        s.init2()
+        s.cbind()
+    def init2(s):
         s.element_size = 40 #NOT DEFINED; EXAMPLE!!!
 
-        s.elem_page=int(ui.display_size[1]/s.element_size)
+        s.elem_page = int(ui.display_size[1]/s.element_size)
 
-        s.list_image=Image.new(ui.display_size)
+        s.list_image = Image.new(ui.display_size)
         
-        s.scroll_bar = ScrollBar(s.select_item)
         s.scroll_bar.position = (ui.display_size[0]-20,20,ui.display_size[1]-41,15)
         s.scroll_bar.orientation = 'vertical'
         s.scroll_bar.max_page = s.elem_page
         s.scroll_bar.init_values()
-
-        s.cbind()
     def screen_change(s):
-        #if ui.landscape:
-            #s.list_image=Image.new(ui.landscape_size)
-        #    s.elem_page=4
-        #else:
-        #    s.elem_page=5
-        s.elem_page=int(ui.display_size[1]/s.element_size)
-        s.list_image=Image.new(ui.display_size)
-        s.scroll_bar.position = (ui.display_size[0]-20,20,ui.display_size[1]-41,15)
-        s.scroll_bar.max_page = s.elem_page
-        s.scroll_bar.init_values()
+       # s.elem_page=int(ui.display_size[1]/s.element_size)
+        # s.list_image=Image.new(ui.display_size)
+        # s.scroll_bar.position = (ui.display_size[0]-20,20,ui.display_size[1]-41,15)
+        # s.scroll_bar.max_page = s.elem_page
+        # s.scroll_bar.init_values()
         #s.x,s.y=s.list_image.size
         #if (ui.landscape!=s.old_mode): s.position,s.index,s.page=0,0,0
         #s.old_mode=ui.landscape
+        s.init2()
         i=s.current()
         s.position,s.page=0,0
         s.select_item(i)
@@ -1947,7 +1957,7 @@ class GrafList:
     def cbind(s):
         ui.unbindall()
         #Touch screen for the scroll bar
-        s.scroll_bar.set_touch(ui.canvas)
+        s.scroll_bar.set_touch()
         ui.mode_callback=s.screen_change
         if ui.landscape==1:
             ui.bind(EScancodeUpArrow, lambda: s.key_cb(2))
@@ -4013,8 +4023,8 @@ class mini_player:
             s.t.after(0.1,s.refresh_ao)
     def bind(s):
         ui.unbindall()
-        s.seek_bar.set_touch(ui.canvas)
-        s.vol_bar.set_touch(ui.canvas)
+        s.seek_bar.set_touch()
+        s.vol_bar.set_touch()
         ui.bind(63557,lambda: s.audio_istance.pause())
         ui.bind(EStdKeyIncVolume,lambda: s.audio_istance.vol_up())
         ui.bind(EStdKeyDecVolume,lambda: s.audio_istance.vol_down())
@@ -4306,48 +4316,44 @@ class mini_player:
         else: ui.draw(s.main)
 
 class text_viewer:
-    def __init__(s,file="",text="",end_callback=None,line_sep="\r\n",title="",read_only=0):
-        s.main=None
-        s.text=text
-        s.read_only=read_only
-        # if s.read_only:
-            # settings.text_viewer_view_mode=1
-        s.file=file
-        s.file_name=os.path.split(file)[1]
-        s.title=title
-        s.total_char=0
-        s.codifica="ascii"
-        # s.mode="normal"
-        # s.visual_type="reale"
-        s.line_sep=line_sep
-        #s.iu=0 #E' unicode?
+    def __init__(s, file = None, text = u"", end_callback = None, line_sep = u"\r\n", title = u"", read_only=0):
+        s.timg = None
+        s.text = text
+        s.read_only = read_only
+        s.file = file
+        s.file_name = os.path.split(file)[1]
+        s.title = title
+        s.total_char = 0
+        s.codifica = "ascii"
+        s.line_sep = line_sep
         if s.file:
             try:
-                s.text,s.codifica,s.total_char,s.line_sep=s.load()
+                s.text,s.codifica,s.total_char,s.line_sep = s.load()
             except Exception,e:
                 user.note(_(u"Errore di lettura:\n%s")%e,_(u"Visualizzatore testi"))
                 return
         else:
-            s.file=s.title
-            s.file_name=s.title
-        s.text_lines=[]
-        s.len_info=0
-        if ui.landscape: s.max_lines=8
-        else: s.max_lines=10
-        s.end_callback=end_callback
-        s.x=5
-        s.min_x=s.x
-        s.y=30
-        #s.pixel_x=170
-        s.first_line=0
-        s.end_line=s.max_lines
-        s.scroll_offset=5
-        s.line_query=1
-        ok=s.text_init(s.line_sep)
-        if ok: s.body_init()
+            s.file = s.title
+            s.file_name = s.title
+        s.text_lines = []
+        s.line_no = 0
+        s.end_callback = end_callback
+        s.x = 5
+        s.min_x = s.x
+        s.y = 30
+        s.first_line = 0
+        s.end_line = 10
+        s.scroll_offset = 5
+        s.line_query = 1
+        s.VScrollbar = ScrollBar(s.goto_line)
+        s.VScrollbar.orientation = 'vertical'
+        # s.HSrollbar = Scrollbar()
+        # s.HScrollbar = 'horizontal'
+        if s.text_init(s.line_sep):
+            s.body_init()
+    #TODO: file position saving
     # def file_position(s,r=1):
         # fn=directory.data_dir+"\\position.dat"
-        
     def set_menu(s):
         if settings.text_viewer_view_mode:
             mdm=(_(u"Adatta a schermo"),[s.cambia_visualizzazione],_(u"Sì"))
@@ -4355,71 +4361,69 @@ class text_viewer:
             mdm=(_(u"Adatta a schermo"),[s.cambia_visualizzazione],_(u"No"))
         s.menu=[mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
                     (_(u"Pagina su"),[lambda: s.pag_su(-10)],u"[9]"),(_(u"Pagina giù"),[lambda: s.pag_giu(10,1)],u"[#]"),
-                    (_(u"Inizio"),[lambda: s.goto_line(0)],u"[7]"),(_(u"Fine"),[lambda: s.goto_line(s.len_info-1)],u"[*]")
+                    (_(u"Inizio"),[lambda: s.goto_line(0)],u"[7]"),(_(u"Fine"),[lambda: s.goto_line(s.line_no-1)],u"[*]")
                 ]
         if ui.landscape==1:
             s.menu=[mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
                         (_(u"Pagina su"),[lambda: s.pag_giu(10,1)],u"[0]"),(_(u"Pagina giù"),[lambda: s.pag_su(-10)],u"[*]"),
-                        (_(u"Inizio"),[lambda: s.goto_line(0)],u"[8]"),(_(u"Fine"),[lambda: s.goto_line(s.len_info-1)],u"[7]")
+                        (_(u"Inizio"),[lambda: s.goto_line(0)],u"[8]"),(_(u"Fine"),[lambda: s.goto_line(s.line_no-1)],u"[7]")
                     ]
         elif ui.landscape==2:
             s.menu=[mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
                         (_(u"Pagina su"),[lambda: s.pag_giu(10,1)],u"[0]"),(_(u"Pagina giù"),[lambda: s.pag_su(-10)],u"[#]"),
-                        (_(u"Inizio"),[lambda: s.goto_line(0)],u"[7]"),(_(u"Fine"),[lambda: s.goto_line(s.len_info-1)],u"[8]")
+                        (_(u"Inizio"),[lambda: s.goto_line(0)],u"[7]"),(_(u"Fine"),[lambda: s.goto_line(s.line_no-1)],u"[8]")
                     ]
         ui.menu.menu(s.menu)
-    def screen_change(s,at_init=0):
-        old=ui.landscape
+    def screen_change(s,at_init = 0):
+        old = ui.landscape
         if ui.landscape:
             s.max_lines=8
-            #del s.main
-            #s.main=Image.new(ui.landscape_size)
         else:
             s.max_lines=10
-            #del s.main
-        s.main=Image.new(ui.display_size)
-        # elif ui.landscape==1:
-            # s.max_lines=8
-            # del s.main
-            # s.main=Image.new(ui.landscape_size)
-        # elif ui.landscape==2:
-            # s.max_lines=8
-            # del s.main
-            # s.main=Image.new(ui.landscape_size)
+        s.end_line = s.max_lines
+        s.VScrollbar.max_page = s.max_lines
+        s.VScrollbar.position = (ui.display_size[0]-20,20,ui.display_size[1]-41,15)
+        s.VScrollbar.init_values()
+        s.timg = Image.new(ui.display_size)
         if not at_init:
             #Se si cambia risoluzione ed è attiva l'impostazione di adattamento a schermo, bisogna riadattare tutto il testo
             #Mettiamo a posto la posizione del testo (riga prima e riga ultima)
-            if s.len_info>s.max_lines: s.end_line=s.first_line+s.max_lines
-            if s.end_line>s.len_info:
-                s.first_line=s.len_info-s.max_lines
-                s.end_line=s.first_line+s.max_lines
+            if s.line_no > s.max_lines:
+                s.end_line = s.first_line+s.max_lines
+            if s.end_line > s.line_no:
+                s.first_line = s.line_no-s.max_lines
+                s.end_line = s.first_line+s.max_lines
                 #print "Riadattato per la modalita':",ui.landscape
             if settings.text_viewer_view_mode==1 and (old==0 or old==2):
                 s.text_init(s.line_sep)
             else:
                 if settings.text_viewer_view_mode==1:
-                    s.first_line=0
-                    s.end_line=s.max_lines
+                    s.first_line = 0
+                    s.end_line = s.max_lines
             s.bind()
             s.text_redraw()
-    def text_init(s,line_sep):
-        s.text_lines=[] #Prepariamo e puliamo la variabile da cose vecchie.
-        s.first_line=0
-        s.end_line=s.max_lines
-        s.text=s.text.replace("\t","    ") #Sostituiamo i tabulatori con 4 spazi (cosi non si vede il quadratino)
+    def text_init(s, line_sep):
+        s.text_lines = [] #Prepariamo e puliamo la variabile da cose vecchie.
+        # s.first_line = 0
+        # s.end_line = s.max_lines
+        s.text = s.text.replace(u"\t",u"    ") #Sostituiamo i tabulatori con 4 spazi (cosi non si vede il quadratino)
         if settings.text_viewer_view_mode==0 and (not s.read_only):
-            s.text_lines=s.text.split(line_sep)
-            s.len_info=len(s.text_lines)
+            s.text_lines = s.text.split(line_sep)
+            s.line_no = len(s.text_lines)
             return 1
         elif settings.text_viewer_view_mode==1 or s.read_only:
             #from akntextutils import wrap_text_to_array
             lines=s.text.split(line_sep)
             for line in lines:
-                if ui.landscape: t=wrap_text_to_array(line,'dense',192)
-                else: t=wrap_text_to_array(line,'dense',164)
-                if t!=(): s.text_lines+=t
-                else: s.text_lines.append("")
-            s.len_info=len(s.text_lines)
+                if ui.landscape:
+                    t=wrap_text_to_array(line,'dense',192)
+                else:
+                    t=wrap_text_to_array(line,'dense',164)
+                if t!=():
+                    s.text_lines+=t
+                else:
+                    s.text_lines.append("")
+            s.line_no = len(s.text_lines)
             del lines
             return 1
         else:
@@ -4455,7 +4459,7 @@ class text_viewer:
         return text.replace(u'\r\n', u'\u2029').replace(u'\n', u'\u2029') , enc , len(text) , u'\u2029'
 
     def esci(s):
-        del s.text,s.text_lines,s.len_info
+        del s.text,s.text_lines,s.line_no
         #ui.reload_state()
         if s.read_only:
             s.end_callback(None,s.old_ui)
@@ -4464,12 +4468,6 @@ class text_viewer:
     def cambia_visualizzazione(s):
         s.x=s.scroll_offset
         settings.text_viewer_view_mode=settings.text_viewer_view_mode^1
-        # if settings.text_viewer_view_mode==1:
-            # settings.text_viewer_view_mode=0
-        # elif settings.text_viewer_view_mode==0:
-            # settings.text_viewer_view_mode=1
-        # else:
-            # settings.text_viewer_view_mode=0
         ok=s.text_init(s.line_sep)
         s.set_menu()
         s.bind()
@@ -4477,10 +4475,10 @@ class text_viewer:
             s.text_redraw()
     def set_orizzontal_position(s,text):
         if (settings.text_viewer_view_mode!=1) and (not s.read_only):
-            try: s.x=-(s.main.measure_text(text,'dense')[1])
+            try: s.x=-(s.timg.measure_text(text,'dense')[1])
             except: pass
     def cerca_parola(s):
-        #if s.len_info<=10:
+        #if s.line_no<=10:
             #user.note(u"Testo troppo corto!\nLa parola è nella prima pagina :)")
             #return
         parola=appuifw.query(_(u"Parola chiave da cercare:"),"text",settings.text_viewer_search_string)
@@ -4515,30 +4513,31 @@ class text_viewer:
         s.text_redraw()
     def bind(s):
         ui.unbindall()
+        s.VScrollbar.set_touch()
         if ui.landscape==1:
-            ui.bind(63495,s.pag_su)
-            ui.bind(63496,s.pag_giu)
+            ui.bind(EScancodeUpArrow,s.pag_su)
+            ui.bind(EScancodeLeftArrow,s.pag_giu)
             if not settings.text_viewer_view_mode:
                 if not s.read_only:
-                    ui.bind(63498,s.sx)
-                    ui.bind(63497,s.dx)
-            ui.bind(EScancode9, lambda: s.goto_line(s.len_info-1))
+                    ui.bind(EScancodeDownArrow,s.sx)
+                    ui.bind(EScancodeUpArrow,s.dx)
+            ui.bind(EScancode9, lambda: s.goto_line(s.line_no-1))
             ui.bind(EScancode8, lambda: s.goto_line(0))
-            ui.bind(53, s.cerca_parola)
-            ui.bind(49, s.inizio_linea)
+            # ui.bind(53, s.cerca_parola)
+            # ui.bind(49, s.inizio_linea)
             ui.bind(EScancode0, lambda: s.pag_su(s.max_lines))
             ui.bind(EScancodeHash, lambda: s.pag_giu(s.max_lines))
         elif ui.landscape==2:
-            ui.bind(63496,s.pag_su)
-            ui.bind(63495,s.pag_giu)
+            ui.bind(EScancodeLeftArrow,s.pag_su)
+            ui.bind(EScancodeRightArrow,s.pag_giu)
             if not settings.text_viewer_view_mode:
                 if not s.read_only:
-                    ui.bind(63497,s.sx)
-                    ui.bind(63498,s.dx)
-            ui.bind(EScancode7, lambda: s.goto_line(s.len_info-1))
+                    ui.bind(EScancodeUpArrow,s.sx)
+                    ui.bind(EScancodeDownArrow,s.dx)
+            ui.bind(EScancode7, lambda: s.goto_line(s.line_no-1))
             ui.bind(EScancode8, lambda: s.goto_line(0))
-            ui.bind(53, s.cerca_parola)
-            ui.bind(49, s.inizio_linea)
+            # ui.bind(53, s.cerca_parola)
+            # ui.bind(49, s.inizio_linea)
             ui.bind(EScancode0, lambda: s.pag_su(s.max_lines))
             ui.bind(EScancodeStar, lambda: s.pag_giu(s.max_lines))
         else:
@@ -4546,43 +4545,46 @@ class text_viewer:
             ui.bind(EScancodeDownArrow,s.pag_giu)
             if not settings.text_viewer_view_mode:
                 if not s.read_only:
-                    ui.bind(63495,s.sx)
-                    ui.bind(63496,s.dx)
-            ui.bind(42, lambda: s.goto_line(s.len_info-1))
-            ui.bind(55, lambda: s.goto_line(0))
-            ui.bind(53, s.cerca_parola)
-            ui.bind(49, s.inizio_linea)
-            ui.bind(57, lambda: s.pag_su(s.max_lines))
-            ui.bind(35, lambda: s.pag_giu(s.max_lines))
+                    ui.bind(EScancodeRightArrow,s.sx)
+                    ui.bind(EScancodeLeftArrow,s.dx)
+            ui.bind(EScancodeStar, lambda: s.goto_line(s.line_no-1))
+            ui.bind(EScancode7, lambda: s.goto_line(0))
+            ui.bind(EScancode9, lambda: s.pag_su(s.max_lines))
+            ui.bind(EScancodeHash, lambda: s.pag_giu(s.max_lines))
+        #Common keys
+        ui.bind(EScancode5, s.cerca_parola)
+        ui.bind(EScancode1, s.inizio_linea)
+        #TODO: key 3 to go a the end of the line
+        #TODO: add qwerty specific keys
     # def pag_giu(s,plus=0,page=0):
-        # if page==1 and s.len_info-s.end_line<=s.max_lines:
-            # s.end_line=s.len_info
+        # if page==1 and s.line_no-s.end_line<=s.max_lines:
+            # s.end_line=s.line_no
             # s.first_line=s.end_line-s.max_lines
-        # if s.len_info>s.max_lines:
+        # if s.line_no>s.max_lines:
             # s.first_line+=1+plus
             # s.end_line+=1+plus
-            # if s.end_line>s.len_info:
-                # s.end_line=s.len_info
+            # if s.end_line>s.line_no:
+                # s.end_line=s.line_no
                 # s.first_line-=1+plus
         # s.text_redraw()
     def pag_giu(s,plus=1):
-        if s.len_info>s.max_lines:
-            if plus+s.end_line>s.len_info:
-                s.end_line=s.len_info
+        if s.line_no>s.max_lines:
+            if plus+s.end_line>s.line_no:
+                s.end_line=s.line_no
                 s.first_line=s.end_line-s.max_lines
             else:
-            # if page==1 and s.len_info-s.end_line<=s.max_lines:
-                # s.end_line=s.len_info
+            # if page==1 and s.line_no-s.end_line<=s.max_lines:
+                # s.end_line=s.line_no
                 # s.first_line=s.end_line-s.max_lines
                 #
                 s.first_line+=plus
                 s.end_line+=plus
-                # if s.end_line>s.len_info:
-                    # s.end_line=s.len_info
+                # if s.end_line>s.line_no:
+                    # s.end_line=s.line_no
                     # s.first_line-=s.end_line-s.max_lines#plus
             s.text_redraw()
     def pag_su(s,lines=1):
-        if s.len_info>s.max_lines:
+        if s.line_no>s.max_lines:
             s.first_line-=lines
             s.end_line-=lines
             if s.first_line<0:
@@ -4591,20 +4593,20 @@ class text_viewer:
             s.text_redraw()
     def goto_line(s,linea=None):
         if linea==None:
-            linea=appuifw.query(_(u"Linea (att:%i,max:%i):")%(s.first_line+1,s.len_info),"number",s.line_query)
+            linea=appuifw.query(_(u"Linea (att:%i,max:%i):")%(s.first_line+1,s.line_no),"number",s.line_query)
             if not linea: return
             linea-=1
-        if s.len_info<=s.max_lines:
+        if s.line_no<=s.max_lines:
             return
-        if (linea+1)>s.len_info:
-            user.note(_(u"Linea inesistente!\nMax: %i\nInserito: %i")%(s.len_info,linea+1),_(u"Visualizzatore testi"),-1)
+        if (linea+1)>s.line_no:
+            user.note(_(u"Linea inesistente!\nMax: %i\nInserito: %i")%(s.line_no,linea+1),_(u"Visualizzatore testi"),-1)
         else:
-            if not linea>s.len_info-s.max_lines:
+            if not linea>s.line_no-s.max_lines:
                 s.end_line=linea+s.max_lines
                 s.first_line=linea
             else:
-                s.end_line=s.len_info
-                s.first_line=s.len_info-s.max_lines
+                s.end_line=s.line_no
+                s.first_line=s.line_no-s.max_lines
             s.line_query=linea+1
             s.text_redraw()
     def inizio_linea(s):
@@ -4618,56 +4620,42 @@ class text_viewer:
     def dx(s):
         s.x-=s.scroll_offset
         s.text_redraw()
-#    def text_redraw_normal(s):
-
-    #def text_redraw_landscape(s):
-        #s.main.blit(grafica.bg_img)
-        #i=0
-        #for linea in s.text_lines[s.first_line:s.end_line]:
-        #    try: s.main.text((s.x,s.y+15*(i+1)),unicode(linea),font='dense',fill=settings.text_color)
-        #    except: pass
-        #    i+=1
-        # if not s.title: s.main.text((3,11),unicode("%s (%i)"%(s.file_name[:50],s.total_char),'utf8'),fill=settings.path_color)
-        # else: s.main.text((3,11),unicode(s.title),fill=settings.path_color)
-        # if not s.title: s.main.text((3,24),unicode("Codifica: '%s'"%(s.codifica),'utf8'),fill=settings.path_color)
-        #if not s.title:
-            #s.main.text((3,11),unicode("%s... (%i)"%(s.file_name[:35],s.total_char),'utf8'),fill=settings.path_color)
-        #    text_cut(s.main,(3,11),to_unicode(s.file_name),settings.path_color,None)
-        #else:
-        #    s.main.text((3,11),to_unicode(s.title),fill=settings.path_color)
-        #if not s.title:
-        #    s.main.text((3,24),u"Codifica: '%s'"%s.codifica,fill=settings.path_color)
-        #    text_right(s.main,24,u"%i"%s.total_char,settings.path_color,u"Nokia Sans S60",s.main.size[0]-8)
 
     def text_redraw(s,rect=None):
-        s.main.blit(grafica.bg_img)
-        i=0
+        s.timg.blit(grafica.bg_img)
+        i = 0
         for linea in s.text_lines[s.first_line:s.end_line]:
-            try: s.main.text((s.x,s.y+15*(i+1)),unicode(linea),font='dense',fill=settings.text_color)
-            except: pass
+            try:
+                s.timg.text((s.x,s.y+15*(i+1)),unicode(linea),font='dense',fill=settings.text_color)
+            except:
+                pass
             i+=1
         if not s.title:
-            text_cut(s.main,(3,11),to_unicode(s.file_name),settings.path_color,None)
+            text_cut(s.timg,(3,11),to_unicode(s.file_name),settings.path_color,None)
         else:
-            s.main.text((3,11),to_unicode(s.title),fill=settings.path_color)
+            s.timg.text((3,11),to_unicode(s.title),fill=settings.path_color)
         if not s.title:
-            s.main.text((3,24),_(u"Codifica: '%s'")%s.codifica,fill=settings.path_color)
-            text_right(s.main,24,u"%i"%s.total_char,settings.path_color,u"Nokia Sans S60",s.main.size[0]-8)
-        #s.main.polygon((170,14,175,14,175,193,170,193),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2)
+            s.timg.text((3,24),_(u"Codifica: '%s'")%s.codifica,fill=settings.path_color)
+            text_right(s.timg,24,u"%i"%s.total_char,settings.path_color,u"Nokia Sans S60",s.timg.size[0]-8)
+        #s.timg.polygon((170,14,175,14,175,193,170,193),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2)
         #scroll bars
-        if ui.landscape:
-            if s.len_info>s.max_lines: #Barra di scroll laterale
-                q=15+int(148.0/s.len_info*s.first_line) #5+int(177.0/len(s.file)*s.page)+9
-                qp=q+int(148.0/s.len_info*s.max_lines)-1
-                s.main.polygon((202,14,207,14,207,162,202,162),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2) #Sfondo barra di scorrimento
-                s.main.polygon((203,q,206,q,206,qp,203,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
-        else:
-            if s.len_info>s.max_lines: #Barra di scroll laterale
-                q=15+int(177.0/s.len_info*s.first_line) #5+int(177.0/len(s.file)*s.page)+9
-                qp=1+q+int(177.0/s.len_info*s.max_lines)
-                s.main.polygon((170,14,175,14,175,193,170,193),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2) #Sfondo barra di scorrimento
-                s.main.polygon((171,q,174,q,174,qp,171,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
-        ui.draw(s.main)
+        # if ui.landscape:
+            # if s.line_no>s.max_lines: #Barra di scroll laterale
+                # q=15+int(148.0/s.line_no*s.first_line) #5+int(177.0/len(s.file)*s.page)+9
+                # qp=q+int(148.0/s.line_no*s.max_lines)-1
+                # s.timg.polygon((202,14,207,14,207,162,202,162),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2) #Sfondo barra di scorrimento
+                # s.timg.polygon((203,q,206,q,206,qp,203,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
+        # else:
+            # if s.line_no>s.max_lines: #Barra di scroll laterale
+                # q=15+int(177.0/s.line_no*s.first_line) #5+int(177.0/len(s.file)*s.page)+9
+                # qp=1+q+int(177.0/s.line_no*s.max_lines)
+                # s.timg.polygon((170,14,175,14,175,193,170,193),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2) #Sfondo barra di scorrimento
+                # s.timg.polygon((171,q,174,q,174,qp,171,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
+        if s.line_no>s.max_lines:
+            s.VScrollbar.current = s.first_line
+            s.VScrollbar.max_value = s.line_no
+            s.VScrollbar.draw(s.timg)
+        ui.draw(s.timg)
 
 class id3tag_edit_form:
     def __init__(s,file,end_callback=None,read_tag=1,title=u"",artist=u"",album=u"",year=0,comment=u"",track=None,genre=255):

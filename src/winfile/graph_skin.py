@@ -22,9 +22,18 @@ class Graphics:
 
     pass
 
-class Skins:
+class Skin:
 
-    pass
+    def __init__(s, screen_size):
+
+        #Title rect
+        s.title_rect = 
+        #Rect where softkeys are
+        s.softkeys_rect = 
+        #The main drawable area used
+        s.default_drawable_rect = 
+        #The rect of the main scrollbar of the programm
+        s.default_bar_rect = [screen_size[0],]
 
 '''
 
