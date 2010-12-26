@@ -644,7 +644,7 @@ class _SkinUI:
         #Rect where softkeys are
         s.softkeys_rect = [0, int(py*94), dx, dy]
         #The main drawable area used
-        s.default_drawable_rect = [0, s.title_rect[3], dx, s.softkeys_rect[1]]
+        s.main_drawable_rect = [0, s.title_rect[3], dx, s.softkeys_rect[1]]
         #The rect of the main scrollbar of the programm
         s.scrollbar_rect = (dx - int(px*3), s.title_rect[3], s.softkeys_rect[1] - s.title_rect[3], int(px*3))
         
@@ -1919,6 +1919,7 @@ class LType:
 
 class GrafList:
 #Listbox controller
+#TODO: support selection callback and element callback during scroll (every element that hasn't been called)
     def __init__(s):#,sel_cb=None,left_cb=None,right_cb=None):
         s.no_data = _(u"Nessun elemento")
         s.position = 0
@@ -1932,17 +1933,22 @@ class GrafList:
         s.scroll_bar = ScrollBar(s.select_item)
         s.init2()
         s.cbind()
-    def init2(s):
-        s.element_size = 40 #NOT DEFINED; EXAMPLE!!!
 
-        s.elem_page = int(ui.display_size[1]/s.element_size)
+    def init2(s):
+        s.ys = skinUI.title_rect[3]
+        s.elementX_size, s.elementY_size = grafica.csel_img.size #TODO: add this in skinUI
+        s.elem_page = int( (skinUI.main_drawable_rect[3] - skinUI.main_drawable_rect[1]) / float(s.elementY_size))
+        s.spacing = int( ( (skinUI.main_drawable_rect[3] - skinUI.main_drawable_rect[1]) % s.elementY_size) / s.elem_page )
+#        s.elem_rect = (0, 0, )
+        #s.elem_page = int(ui.display_size[1] / s.element_size)
 
         s.list_image = Image.new(ui.display_size)
         
-        s.scroll_bar.position = skinUI.scrollbar_rect#(ui.display_size[0]-20,20,ui.display_size[1]-41,15)
+        s.scroll_bar.position = skinUI.scrollbar_rect
         s.scroll_bar.orientation = 'vertical'
         s.scroll_bar.max_page = s.elem_page
         s.scroll_bar.init_values()
+
     def screen_change(s):
        # s.elem_page=int(ui.display_size[1]/s.element_size)
         # s.list_image=Image.new(ui.display_size)
@@ -1954,19 +1960,24 @@ class GrafList:
         #s.old_mode=ui.landscape
         s.init2()
         i=s.current()
-        s.position,s.page=0,0
+        s.position = 0
+        s.page = 0
         s.select_item(i)
         s.cbind()
         if s.mode_cb!=None:
             s.mode_cb()
         s.redrawlist()
+
     def bind(s,**args):
         ui.bind(args)
+
     def current(s):
         return s.position + s.page
-    def select_item(s,i,r=1):
-        s.position,s.page=0,0
-        ln=len(s.elements)
+
+    def select_item(s, i, r = 1):
+        s.position = 0
+        s.page = 0
+        ln = len(s.elements)
         if not ln:
             if r:
                 s.redrawlist()
@@ -1974,36 +1985,41 @@ class GrafList:
         if type(i) in [types.StringType,types.UnicodeType]: #Se è una stringa, bisogna andare a selezionare l'elemento con tale nome
             try:
                 while ln>s.position:
-                        if s.elements[s.position].name==i:
+                        if s.elements[s.position].name == i:
                             break
                         else:
-                            s.position+=1
-                            if s.position>=(ln-1):
+                            s.position += 1
+                            if s.position >= (ln-1):
                                 break
             except:
                 s.position=0
         else:
             if (not i>(ln-1)):
-                s.position=int(i)
+                s.position = i
             else:
-                s.position=0
+                s.position = 0
         if s.position>(s.elem_page-1):
-            s.page,s.position = s.position-(s.elem_page-1), s.elem_page-1
+            s.page = s.position-(s.elem_page-1)
+            s.position = s.elem_page-1
         if r:
             s.redrawlist()
+
     def select_element(s):
-        punto=s.current()
+        punto = s.current()
         if punto in s.selected:
             s.selected.remove(punto)
         else:
             s.selected.append(punto)
         s.redrawlist()
+
     def select_all(s):
-        s.selected=xrange(0,len(s.elements))
+        s.selected = range(0,len(s.elements))
         s.redrawlist()
+
     def select_none(s):
-        s.selected=[]
+        s.selected = []
         s.redrawlist()
+
     def select_invert(s):
         for i in xrange(len(s.elements)):
             if i in s.selected:
@@ -2011,52 +2027,58 @@ class GrafList:
             else:
                 s.selected.append(i)
         s.redrawlist()
-    def set_list(s,lista,i=None):
-        s.elements=[]
-        s.selected=[]
+
+    def set_list(s, lista, i = 0):
+        s.elements = []
+        s.selected = []
         for i in lista:
             try:
                 s.elements.append(LType(i[0],i[1],i[2],i[3],i[4],i[5]))
             except:
                 break
-        if i:
-            s.select_item(i,0)
-        else:
-            s.position,s.page=0,0,0
-        s.redrawlist()
+        s.select_item(i)
+        # if i:
+            # s.select_item(i,0)
+        # else:
+            # s.position,s.page=0,0,0
+        # s.redrawlist()
+
     def page_up(s):
-        if s.page==0:
-            s.position=0
+        if s.page == 0:
+            s.position = 0
         else:
-            l=len(s.elements)
-            if l>s.elem_page:
-                s.page-=s.elem_page
-                s.position=0
+            if len(s.elements)>s.elem_page:
+                s.page -= s.elem_page
+                s.position = 0
             if s.page<0:
-                s.page=0
+                s.page = 0
         s.redrawlist()
+
     def page_down(s):
-        l=len(s.elements)
-        if l<=s.elem_page:
+        l = len(s.elements)
+        if l <= s.elem_page:
             return
-        l4=l-s.elem_page
-        s.page+=s.elem_page
-        s.position=s.elem_page-1
+        l4 = l-s.elem_page
+        s.page += s.elem_page
+        s.position = s.elem_page-1
         if s.page>l4:
-            s.page=l4
-            s.position=s.elem_page-1
+            s.page = l4
+            s.position = s.elem_page-1
         s.redrawlist()
+
     def up(s):
-        l=len(s.elements)
+        l = len(s.elements)
         if s.position>0:
-            s.position-=1
+            s.position -= 1
         elif s.page>0:
-            s.page-=1
+            s.page -= 1
         elif l>s.elem_page-1:
-            s.position,s.page=(s.elem_page-1),l-s.elem_page
+            s.position = (s.elem_page-1)
+            s.page = l-s.elem_page
         elif l>0:
-            s.position=l-1
+            s.position = l-1
         s.redrawlist()
+
     def down(s):
         l=len(s.elements)
         if l>(s.elem_page-1):
@@ -2065,54 +2087,64 @@ class GrafList:
             elif s.position+s.page+1<l:
                 s.page+=1
             else:
-                s.position,s.page=0,0
+                s.position = 0
+                s.page = 0
         elif l>0:
-            if s.position+1<l:
-                s.position+=1
+            if (s.position+1) < l:
+                s.position += 1
             else:
-                s.position,s.page=0,0
+                s.position = 0
+                s.page = 0
         s.redrawlist()
-    def key_cb(s,k):
-        if k==2:
-            if s.right_cb!=None:
-                s.right_cb()
-                s.selected=[]
-        if k==3:
-            if s.left_cb!=None:
-                s.left_cb()
-                s.selected=[]
-        if k==1:
-            if s.sel_cb!=None:
-                s.sel_cb()
+
+    def right_cb_cb(s):
+        if s.right_cb!=None:
+            s.right_cb()
+#            s.selected = []
+
+    def left_cb_cb(s):
+        if s.left_cb!=None:
+            s.left_cb()
+#            s.selected = []
+
+    def select_cb_cb(s):
+        if s.sel_cb!=None:
+            s.sel_cb()
+
     def reset(s):
-        s.position,s.page=0,0
-        s.elements=[]
-        s.selected=[]
-        s.mode_cb=None
-        s.sel_cb=None
-        s.right_cb=None
-        s.left_cb=None
+        s.no_data = _(u"Nessun elemento")
+        s.position = 0
+        s.page = 0
+        s.elements = []
+        s.selected = []
+        s.mode_cb = None
+        s.sel_cb = None
+        s.right_cb = None
+        s.left_cb = None
         s.cbind()
+
     def save(s):
         return s.no_data,s.position,s.page,s.sel_cb,s.left_cb,s.right_cb,s.elements,s.selected,s.mode_cb
+
     def load(s,sett):
         s.no_data,s.position,s.page,s.sel_cb,s.left_cb,s.right_cb,s.elements,s.selected,s.mode_cb=sett
+
     def cbind(s):
         ui.unbindall()
         #Touch screen for the scroll bar
         s.scroll_bar.set_touch()
         ui.mode_callback=s.screen_change
         if ui.landscape==1:
-            ui.bind(EScancodeUpArrow, lambda: s.key_cb(2))
-            ui.bind(EScancodeDownArrow, lambda: s.key_cb(3))
+            ui.bind(EScancodeUpArrow, s.right_cb_cb)
+            ui.bind(EScancodeDownArrow, s.left_cb_cb)
             ui.bind(EScancodeRightArrow, s.down)
             ui.bind(EScancodeLeftArrow, s.up)
             ui.bind(EScancode0, s.page_up)
             ui.bind(EScancodeHash, s.page_down)
             ui.bind(EScancode9, s.select_element)
         if ui.landscape==2:
-            ui.bind(EScancodeDownArrow, lambda: s.key_cb(2))
-            ui.bind(EScancodeUpArrow, lambda: s.key_cb(3))
+            ui.bind(EScancodeDownArrow, s.right_cb_cb)
+            ui.bind(EScancodeUpArrow, s.left_cb_cb)
             ui.bind(EScancodeLeftArrow, s.down)
             ui.bind(EScancodeRightArrow, s.up)
             ui.bind(EScancode0, s.page_up)
@@ -2121,13 +2153,13 @@ class GrafList:
         else:
             ui.bind(EScancodeUpArrow, s.up)
             ui.bind(EScancodeDownArrow, s.down)
-            ui.bind(EScancodeRightArrow, lambda: s.key_cb(2))
-            ui.bind(EScancodeLeftArrow, lambda: s.key_cb(3))
+            ui.bind(EScancodeRightArrow, s.right_cb_cb)
+            ui.bind(EScancodeLeftArrow, s.left_cb_cb)
             ui.bind(EScancode9, s.page_up)
             ui.bind(EScancodeHash, s.page_down)
             ui.bind(EScancode0, s.select_element)
         #Common keys
-        ui.bind((EScancodeSelect, EStdKeyEnter,), lambda: s.key_cb(1))
+        ui.bind((EScancodeSelect, EStdKeyEnter,), s.select_cb_cb)
     #def img_from_res(s,res,img):
 # if preview_switch==1:
      #   try:
@@ -2169,53 +2201,63 @@ class GrafList:
     # else:
         # img.blit(video_img,mask=video_img_mask,target=(2,15+i12))
     def redrawlist(s):
-        lx,ly=s.list_image.size
-        elen=len(s.elements)
+        lx,ly = s.list_image.size
+        elen = len(s.elements)
         s.list_image.blit(grafica.bg_img)
         if not s.elements:
             #No elements, display a message
-            lines=wrap_text_to_array(s.no_data,'dense',lx-8)
-            yi=int(ly/2-len(lines)*6) #int(ly/2-len(lines)/2*12)
-            i=0
+            lines = wrap_text_to_array(s.no_data, 'dense', lx-8)
+            yi = int(ly/2-len(lines)*6)
+            i = 0
             for line in lines:
                 text_center(s.list_image, yi+(12*i), line, settings.text_color, 'dense')
-                i+=1
+                i += 1
         else:
-            selected_element=s.elements[s.position+s.page]
+            selected_element = s.elements[s.position+s.page]
             #text_cut(s.list_image, (3,11) , selected_element.title, settings.path_color)
             text_render(s.list_image, (3,11), selected_element.title, settings.path_color, None, ALIGNMENT_UP, 1)
-            s.list_image.blit(grafica.csel_img, target = (0,(36*s.position)+15), mask=grafica.csel_img_mask)
-            i=0
-            for elemento in s.elements[s.page:s.page+s.elem_page]:
+            s.list_image.blit(grafica.csel_img, target = (0,((s.elementY_size + s.spacing)*s.position) + s.ys), mask = grafica.csel_img_mask)
+            i = 0
+            for ele in s.elements[s.page:s.page+s.elem_page]:
                 try:
-                        i12=36*i
-                        if elemento.icon:
-                            if elemento.hidden:
-                                if len(elemento.icon)>1:
-                                    s.list_image.blit(luminosita(elemento.icon[0],-30), target = (2,15+i12), mask=elemento.icon[1])
+                        i12 = ((s.elementY_size + s.spacing) * i)  + s.ys
+                        if ele.icon:
+                            ei = ele.icon
+                            ix, iy = ei[0].size
+                            elem_rect = (ix + 3, i12, s.elementX_size,s.elementY_size + i12,)
+                            if ele.hidden:
+                                if len(ei)>1:
+                                    s.list_image.blit(luminosita(ei[0], -30), target = (2, i12), mask = ei[1])
                                 else:
-                                    s.list_image.blit(luminosita(elemento.icon[0],-70), target = (2,15+i12))
+                                    s.list_image.blit(luminosita(ei[0], -70), target = (2, i12))
                             else:
-                                if len(elemento.icon)>1:
-                                    s.list_image.blit(elemento.icon[0], target = (2,15+i12), mask=elemento.icon[1])
+                                if len(ei)>1:
+                                    s.list_image.blit(ei[0], target = (2, i12), mask = ei[1])
                                 else:
-                                    s.list_image.blit(elemento.icon[0], target = (2,15+i12))
-                            if elemento.undername:
-                                s.list_image.text((35,28+i12),elemento.name, settings.text_color, settings.mainfont)
-                                s.list_image.text((35,43+i12),elemento.undername, settings.text_color)
+                                    s.list_image.blit(ei[0], target = (2, i12))
+                            if ele.undername:
+                                #s.list_image.text((ix + 3, 28+i12), ele.name, settings.text_color, settings.mainfont)
+                                #s.list_image.text((ix + 3, 43+i12), ele.undername, settings.text_color)
+                                text_render(s.list_image, elem_rect, ele.name, settings.text_color, settings.mainfont, ALIGNMENT_UP, 1)
+                                text_render(s.list_image, elem_rect, ele.undername, settings.text_color, settings.mainfont, ALIGNMENT_DOWN, 1)
                             else:
-                                s.list_image.text((35,36+i12),elemento.name, settings.text_color, settings.mainfont)
+                                #s.list_image.text((ix + 3, i12 + (i12/2)), ele.name, settings.text_color, settings.mainfont)
+                                text_render(s.list_image, elem_rect, ele.name, settings.text_color, settings.mainfont, ALIGNMENT_MIDDLE, 1)
                         else:
-                            if elemento.undername:
-                                s.list_image.text((5,28+i12),elemento.name, settings.text_color, settings.mainfont)
-                                s.list_image.text((5,43+i12),elemento.undername, settings.text_color)
+                            elem_rect = (6, i12, s.elementX_size,s.elementY_size + i12,)
+                            if ele.undername:
+                                #s.list_image.text((5, 28 + i12), ele.name, settings.text_color, settings.mainfont) #TODO: 5 = int(3%ScreenX)
+                                #s.list_image.text((5, 43 + i12), ele.undername, settings.text_color)
+                                text_render(s.list_image, elem_rect, ele.name, settings.text_color, settings.mainfont, ALIGNMENT_UP, 1)
+                                text_render(s.list_image, elem_rect, ele.undername, settings.text_color, settings.mainfont, ALIGNMENT_DOWN, 1)
                             else:
-                                s.list_image.text((5,36+i12),elemento.name, settings.text_color, settings.mainfont)
+                                #s.list_image.text((5, 36 + i12), ele.name, settings.text_color, settings.mainfont)
+                                text_render(s.list_image, elem_rect, ele.name, settings.text_color, settings.mainfont, ALIGNMENT_MIDDLE, 1)
                         if (i+s.page) in s.selected:
-                            s.list_image.blit(grafica.spuntoimg, target = (17,35+i12), mask=grafica.spunto_mask)
-                except Exception,e:
-                    print str(e)
-                i+=1
+                            s.list_image.blit(grafica.spuntoimg, target = (0,i12), mask=grafica.spunto_mask)
+                except:
+                    traceback.print_exc()
+                i += 1
             #s.list_image.polygon((170,14,175,14,175,193,170,193),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2) #Sfondo barra di scorrimento
             #s.list_image.rectangle((lx,15,lx-6,ly-15),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2)
             if elen>s.elem_page:
@@ -2225,8 +2267,8 @@ class GrafList:
                 # q=15 + int(ratio*s.page)
                 # qp=q + int(ratio*s.elem_page)
                 # s.list_image.rectangle((xa,q,xb,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
-                s.scroll_bar.max_value = elen - 1
-                s.scroll_bar.current = s.page - 1
+                s.scroll_bar.max_value = elen
+                s.scroll_bar.current = s.page
 
                 s.scroll_bar.draw(s.list_image)
 
@@ -2252,13 +2294,13 @@ class Explorer:
     # Le stringhe dei percorsi e dei nomi sono stringhe utf8 (non decodificate a unicode)
     # '''
     def __init__(s):
-        s.content_of_dir=[] #Contiene i percorsi COMPLETI del contenuto di una cartella,nome,grandezza,tipo
-        s.root_list=[("","",3,0)] #Impostiamo all'interno un valore predefinito
-        s.dir=''
-        s.root_tools=[_(u"File Ricevuti"),_(u"Processi"),_(u"Tasks")] #UNICODE!
-        s.last_oslistdir=[]
-        s.is_playing=None
-        s.now_playing=ur(_(u"In riproduzione"))
+        s.content_of_dir = [] #Contiene i percorsi COMPLETI del contenuto di una cartella,nome,grandezza,tipo
+        s.root_list = [("","",3,0)] #Impostiamo all'interno un valore predefinito
+        s.dir = ''
+        s.root_tools = [_(u"File Ricevuti"),_(u"Processi"),_(u"Tasks")] #UNICODE!
+        s.last_oslistdir = []
+        s.is_playing = None
+        s.now_playing = ur(_(u"In riproduzione"))
     def first_boot(s):
         try:
             d=settings.load_session()
@@ -2273,6 +2315,7 @@ class Explorer:
             s.goto_root()
         s.set_inputs_type()
     def img_prev(s, path, def_ico):
+        #TODO: implement image preview
         try:
             im = Image.open(path)
             im.resize((60,60), keepaspect = 1)
@@ -4088,7 +4131,7 @@ class mini_player:
         #s.seek_bar.max_value = 10
         s.seek_bar.init_values()
         
-        s.touch_control = TouchDriver(skinUI.default_drawable_rect, s.touch_cb)#{MOVE_RIGHT: s.next, MOVE_LEFT, s.previous})
+        s.touch_control = TouchDriver(skinUI.main_drawable_rect, s.touch_cb)#{MOVE_RIGHT: s.next, MOVE_LEFT, s.previous})
         
         s.redraw_screen()
         s.canvas_refresh()
