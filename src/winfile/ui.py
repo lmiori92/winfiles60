@@ -31,10 +31,18 @@ listbox class
 
 '''
 
-
+MOVE_LEFT = 1
+MOVE_RIGHT = 2
+MOVE_UP = 4
+MOVE_DOWN = 8
+MOVE_NONE = 16
+MOVE_UPLEFT = MOVE_LEFT|MOVE_UP
+MOVE_UPRIGHT = MOVE_RIGHT|MOVE_UP
+MOVE_DOWNLEFT = MOVE_LEFT|MOVE_DOWN
+MOVE_DOWNRIGHT = MOVE_RIGHT|MOVE_DOWN
 
 class TouchDriver:
-'''
+    '''
 
 vediamo di scrivere qualche idea...
 
@@ -43,7 +51,11 @@ Cosa deve fare la classe?
 - e...qui dipende dall'uso che se ne vuole fare ovvero (casi...):
 
 1) All'interno dell'area bisogna sapere se l'utente preme con un tocco semplice, oppure se effettua uno scroll (e quindi definire la sua direzione)
+    un movimento pressochè la centro non deve essere considerato, cosi nemmeno come (troppo) piccoli spostamenti
     Utilizzi-esempi: scrolling immagini (su-giu: zoom; destra-sinistra: cambio immagine), scrolling canzoni, volume...
+    
+    Questa parte dovrebbe essere quasi completata
+    
 2) All'interno dell'area ci sono elementi (icone, liste,...) e ogni elemento ha una ben definita grandezza. L'utente può selezionare un elemento e, se la lista è lunga, può effettuare
 lo scrolling in varie direzioni ben definite.
     Utilizzi: menu, listbox e altro
@@ -59,7 +71,66 @@ Essa deve avere:
 - deve comunque essere più leggera e ottimizzata possibile
 - non deve essere legata ad immagini o canvas
 
-'''
-    def __init__(s):
+    '''
+    def __init__(s, rect, callback = None):
+
+        # Here are set the last coordinates received, None at init
+        s.last_coords = None
+        # The speed of both X & Y movement (% of the axis size)
+        # 1-> full speed (one pixel resolution, immediate movement recognizing)
+        # 0-> axis deactivated
+        # default value 90 %
+        s.x_speed = 0.90
+        s.y_speed = 0.90
+        # The touchable area
+        s.rect = rect
+        s.lx = abs(s.rect[0] - s.rect[2])
+        s.ly = abs(s.rect[1] - s.rect[3])
+        # Precision based on speed
+        s.dx = s.lx * (1.0-s.x_speed)
+        s.dy = s.ly * (1.0-s.y_speed)
+        s.cb = callback
+
+    def start(s):
     
-    
+        ui.bind_touch(EDrag, s.touch_cb, s.rect)
+
+    def touch_cb(s, coords):
+
+        direction = s.get_direction(coords)
+        if s.cb:
+            s.cb(direction)
+
+    def get_direction(s, coords):
+
+        mov = MOVE_NONE
+        if coords == None:
+            return mov
+        if s.last_coords == None:
+            s.last_coords = coords
+            return mov
+        x, y = coords
+        ox, oy = s.last_coords
+
+        #Movement along the X axis
+        if abs(x-ox) > s.dx:
+            if (x > ox):
+
+                mov |= MOVE_RIGHT
+
+            elif (x < ox):
+
+                mov |= MOVE_LEFT
+        #Movement along the Y axis
+        if abs(y-oy) > s.dy:
+        
+            if (y > oy):
+                
+                mov |= MOVE_DOWN
+
+            elif (y < oy):
+
+                mov |= MOVE_UP
+
+        s.last_coords = coords
+        return mov

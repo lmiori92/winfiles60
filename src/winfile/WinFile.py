@@ -2,7 +2,7 @@
 # -*- coding: latin-1 -*-
 
 # GNU GENERAL PUBLIC LICENSE
-# WinFile ( http://code.google.com/p/winfiles60/ ) - A powerful filemanager for the Symbian OS
+# WinFile main source code ( http://code.google.com/p/winfiles60/ ) - A powerful filemanager for the Symbian OS
 # Copyright   2008-2010 memoryN70 ( memoryS60@gmail.com )
 # 
 # This program is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ import traceback
 #traceback.print_exc()
 #import imp
 
-__shell__ = 1 #if script is run by python shell
+__shell__ = 1 #if script is run into python shell
 __version__ = 1.053
 __version_info__ = (1, 05, 03, '--/--/2010')
 __author__ = "MemoryN70 <memoryS60@gmail.com>"
@@ -118,6 +118,8 @@ import e32
 import sysinfo
 from graphics import *
 from key_codes import *
+
+
 # 3rd party symbian libs
 try:
     import msys
@@ -143,13 +145,29 @@ import zipfile
 
 TEST_IMG = Image.new((1,1))
 
+def wrap_text_to_array2(text, font, width):
+
+    lines = []
+    text = text.splitlines()
+    
+    for line in text:
+
+        line_out = u""
+        fits = TEST_IMG.measure_text(line, font, width)[2]
+            
+        if fits <= 0:
+            lines.append(line)
+            break
+        
+        
+
 def wrap_text_to_array(text, font, width):
         lines = []
         # Paragraph yet to be chopped
         text_lines = text.splitlines()
         for text_left in text_lines:
             while len(text_left) > 0:
-                bounding, to_right, fits = TEST_IMG.measure_text(text_left, font, width, width)
+                bounding, to_right, fits = TEST_IMG.measure_text(text_left, font, width)
                 if fits <= 0:
                     lines.append(text_left)
                     break
@@ -440,6 +458,7 @@ ALIGNMENT_RIGHT = 4
 ALIGNMENT_DOWN = 8
 ALIGNMENT_MIDDLE = 16
 ALIGNMENT_UP = 32
+ALIGMENT_NONE = 64
 
 def text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN, cut = 0, width = None):
         """ Draw text defining its properties and alignment
@@ -506,6 +525,12 @@ def text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_
         img.text((xf, yf), text, fill, font)
         return (xf, yf), bbox, rpixel, n_chars
 
+def lines_render(img, coords, array, spacing = 1, fill = 0, font = None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN, cut = 0, width = None):
+    x, y = coords
+    for line in array:
+        yf = text_render(img, (x,y), text, fill, font, alignment, cut, width)[0][1]
+        y += yf + spacing
+    return y
 #__author__ = "Mikko Ohtamaa <mikko@redinnovation.com>"
 
 class TextRenderer:
@@ -607,6 +632,106 @@ class TextRenderer:
             for chopped_line in chopped_lines:
                 self.render_line(chopped_line, font, fill)
 
+class _SkinUI:
+
+    def __init__(s):
+
+        dx, dy = ui.display_size
+        px = dx/100.0
+        py = dy/100.0
+        #Title rect
+        s.title_rect = [0,0,dx,int(py*8)]
+        #Rect where softkeys are
+        s.softkeys_rect = [0, int(py*94), dx, dy]
+        #The main drawable area used
+        s.default_drawable_rect = [0, s.title_rect[3], dx, s.softkeys_rect[1]]
+        #The rect of the main scrollbar of the programm
+        s.scrollbar_rect = (dx - int(px*3), s.title_rect[3], s.softkeys_rect[1] - s.title_rect[3], int(px*3))
+        
+        #   # Fonts #  #
+        
+        s.default_font = None
+        s.text_viewer_font = (None, py*5)
+        
+        #   # Colors #  #
+        
+        #Image viewer background color
+        s.IV_bg_color = 0
+
+MOVE_LEFT = 1
+MOVE_RIGHT = 2
+MOVE_UP = 4
+MOVE_DOWN = 8
+MOVE_NONE = 16
+MOVE_UPLEFT = MOVE_LEFT|MOVE_UP
+MOVE_UPRIGHT = MOVE_RIGHT|MOVE_UP
+MOVE_DOWNLEFT = MOVE_LEFT|MOVE_DOWN
+MOVE_DOWNRIGHT = MOVE_RIGHT|MOVE_DOWN
+
+class TouchDriver:
+    def __init__(s, rect, callback = None):
+
+        # Here are set the last coordinates received, None at init
+        s.last_coords = None
+        # The speed of both X & Y movement (% of the axis size)
+        # 1-> full speed (one pixel resolution, immediate movement recognizing)
+        # 0-> axis deactivated
+        # default value 90 %
+        s.x_speed = 0.90
+        s.y_speed = 0.90
+        # The touchable area
+        s.rect = rect
+        s.lx = abs(s.rect[0] - s.rect[2])
+        s.ly = abs(s.rect[1] - s.rect[3])
+        # Precision based on speed
+        s.dx = s.lx * (1.0-s.x_speed)
+        s.dy = s.ly * (1.0-s.y_speed)
+        s.cb = callback
+
+    def start(s):
+    
+        ui.bind_touch(EDrag, s.touch_cb, s.rect)
+
+    def touch_cb(s, coords):
+
+        direction = s.get_direction(coords)
+        if s.cb:
+            s.cb(direction)
+
+    def get_direction(s, coords):
+
+        mov = MOVE_NONE
+        if coords == None:
+            return mov
+        if s.last_coords == None:
+            s.last_coords = coords
+            return mov
+        x, y = coords
+        ox, oy = s.last_coords
+
+        #Movement along the X axis
+        if abs(x-ox) > s.dx:
+            if (x > ox):
+
+                mov |= MOVE_RIGHT
+
+            elif (x < ox):
+
+                mov |= MOVE_LEFT
+        #Movement along the Y axis
+        if abs(y-oy) > s.dy:
+        
+            if (y > oy):
+                
+                mov |= MOVE_DOWN
+
+            elif (y < oy):
+
+                mov |= MOVE_UP
+
+        s.last_coords = coords
+        return mov
+
 class unzip:
     def extract(self, file, dir):
         if not dir.endswith(':') and not os.path.exists(dir):
@@ -618,7 +743,7 @@ class unzip:
 
         for name in zf.namelist():
             if not name.endswith('/'):
-                outfile = open(os.path.join(dir, name), 'wb',800)
+                outfile = open(os.path.join(dir, name), 'wb',10000)
                 outfile.write(zf.read(name))
                 outfile.flush()
                 outfile.close()
@@ -1073,14 +1198,13 @@ class Keyboard(object):
                 return True
             return False
 class _UI:
+
+#This is the class to manage all the basic UI features of WinFile like softkeys, canvas, menus, keys and touch events.
+
     def __init__(s):
-        # '''
-        # Classe adibita al controllo dell' interfaccia grafica (canvas), dei tasti , dei softkeys, del menu ecc...
-        # '''
         s.saved_state = []
         s.focus_state = 1
         s.landscape = 0
-        s.menu_exit = None
         #Input events
         s.k_type = (appuifw.EEventKey,appuifw.EEventKeyDown,appuifw.EEventKeyUp,)
         s.t_type = (EButton1Up,EButton1Down,EDrag,ESwitchOn,)
@@ -1089,6 +1213,7 @@ class _UI:
         s.touchbindarr = []
         s.prevtouchbindarr = [] #For menu
         s.menuopened = 0
+        s.menu_exit = None
         #Callbacks
         s.focus_cb = None
         s.key_callback = None
@@ -1168,9 +1293,34 @@ class _UI:
             # appuifw.app.directional_pad = False
         # else:
             # appuifw.app.directional_pad = True
+    def is_landscape(s, rect):
+        x,y = rect
+        if x>y:
+            return 1
+        return 0
     def resize_cb(s, rect):
-        s.canvas_image=Image.new(s.display_size)
-        s.ui_image=Image.new(s.display_size)
+        #Switches screen mode by detecting canvas resizing
+        # if s.switching_mode:
+            # return
+        # s.switching_mode = 1
+        s.canvas_image = Image.new(s.display_size)
+        s.ui_image = Image.new(s.display_size)
+
+        # skinUI.__init__()
+
+        # s.landscape = s.is_landscape(s.display_size)
+
+        # grafica.screen_change()
+        # s.set_softkey_touch()
+        # try:
+            # if s.mode_callback:
+                # s.mode_callback()
+        # except Exception,e:
+           # traceback.print_exc()
+        # s.switching_mode=0
+        
+        
+        
         #Update display_size to current
         # mode = cmp(rect[0],rect[1])
         # if mode == -1:
@@ -1197,19 +1347,9 @@ class _UI:
             if s.right_key[0]:
                 s.right_key[0]()
     def set_softkey_touch(s):
-        x,y=s.display_size
+        x,y = s.display_size
         s.sx_btn = [xrange(x/2+1), xrange(y-20, y+1)]
         s.dx_btn = [xrange(x/2, x+1),xrange(y-20, y+1)]
-        # s.sx_btn = Button()#s.left_softkey)
-        # s.sx_btn.position = (0,y,None,None)
-        # s.sx_btn.init_values()
-        # s.sx_btn.set_touch()
-        
-        # s.dx_btn = Button()#s.right_softkey)
-        
-        # s.dx_btn.position = (int(x/2),y,None,None)
-        # s.dx_btn.init_values()
-        # s.dx_btn.set_touch()
 
     def key_cb(s,key):
         # '''I tasti da catturare e utilizzare sono, in ordine di precedenza:
@@ -1253,6 +1393,7 @@ class _UI:
                     s.left_softkey()
                 if (x in s.dx_btn[0]) and (y in s.dx_btn[1]):
                     s.right_softkey()
+
     def get_shortcut(s, p, translate = 0):
         #p can be key code or callback assigned to key
         for fk in s.bindarr:
@@ -1264,6 +1405,7 @@ class _UI:
                         return s.key_dict[fk.key]
                 else:
                     return '?'
+
     def change_screen_mode(s,mode=None):
         #Switch screen mode by key/menu
         if s.switching_mode:
@@ -1296,6 +1438,7 @@ class _UI:
            #print "Fatal error in s.mode_callback() in UI.change_screen_mode(): ",str(e)
            traceback.print_exc()
         s.switching_mode=0
+
     def fc_cb(s,state):
         s.focus_state=state
         if not state and s.menuopened:
@@ -1395,6 +1538,7 @@ class _UI:
             return
         if s.menuopened == 0:
             s.prevbindarr = s.bindarr
+            s.touchbindarr = s.prevtouchbindarr
             s.menuopened = 1
             s.menu.open()
         else:
@@ -1417,7 +1561,10 @@ class _UI:
             s.bindarr.append(fk)
     def bind_touch(s, type, cb, rect = None):
         #Do some calculations to speed things up
-        x1,y1,x2,y2 = rect[0][0], rect[0][1], rect[1][0], rect[1][1]
+        try:
+            x1,y1,x2,y2 = rect[0][0], rect[0][1], rect[1][0], rect[1][1]
+        except:
+            x1,y1,x2,y2 = rect
         dx = xrange(min(x1,x2),max(x1,x2)+1)
         dy = xrange(min(y1,y2),max(y1,y2)+1)
         ft = FKey(type, cb, (rect,dx,dy))
@@ -1503,30 +1650,26 @@ class Menu:
         self.sm = None
         self.index = 0
         self.page = 0
+        
         self.img = Image.new(ui.display_size)
         self.menu_img = Image.new(ui.display_size)
         self.bg_img = Image.new(ui.display_size)
         self.img.blit(ui.canvas_image)
         self.bg_img.blit(ui.canvas_image)
         blur(self.bg_img,200)
+        
         self.element_size = (grafica.mn_i.size[1] + 5)
         self.element_size2 = grafica.mn_i.size[1]
-        self.text_height = grafica.mn_i.size[1] * .75
-        #self.text_rect = [grafica.mn_i.size[0], grafica.mn_i.size[1], ]
-        self.elem_page =  int (ui.display_size[1] * .75 / self.element_size)# / 29
+        self.text_height = grafica.mn_i.size[1] * .60
+
+        self.elem_page =  int(ui.display_size[1] * .60 / self.element_size)
         mx,my=self.menu_img.size
-        #TODO: 25 is not always correct...check that
+
         if self.num>=self.elem_page:
-            self.y = (my-20) - (self.element_size * self.elem_page)
+            self.y = skinUI.softkeys_rect[1] - (self.element_size * self.elem_page)
         else:
-            self.y = (my-20) - (self.element_size * self.num)
-#        if ui.landscape:
-            #self.img = Image.new(ui.landscape_size)
-            #self.menu_img = Image.new(ui.landscape_size)
-            #self.bg_img = Image.new(ui.landscape_size)
-            # self.elem_page=5
-        # else:
-            # self.elem_page=7
+            self.y = skinUI.softkeys_rect[1] - (self.element_size * self.num)
+
         self.cbind()
         self.show()
     def update_background(self,img):
@@ -1542,16 +1685,6 @@ class Menu:
             self.img = None
             if (self.cb_close != None):
                 self.cb_close()
-    # def up(self):
-        # self.index -= 1
-        # if (self.index < 0):
-            # self.index = (self.num - 1)
-        # self.redrawmenu()
-    # def down(self):
-        # self.index += 1
-        # if (self.index >= self.num):
-            # self.index = 0
-        # self.redrawmenu()
     def up(s):
         if s.index>0:
             s.index-=1
@@ -1617,8 +1750,8 @@ class Menu:
     def cunbind(self):
         ui.unbindall()
     def redrawmenu(self):
-        mx,my=self.menu_img.size
-        sx,sy=grafica.mn_i.size
+        mx,my = self.menu_img.size
+        sx,sy = grafica.mn_i.size
         self.menu_img.blit(self.bg_img)
         self.menu_img.blit(grafica.bg_img, target = (0,self.y), source = (0,self.y,mx,my-13))
         self.menu_img.rectangle([(0,self.y),(mx,my-14)], outline = settings.window_border,width = 1)
@@ -1632,10 +1765,10 @@ class Menu:
             text_render(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.title, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE, 1)
             if mn.shortcut:
                 #text_right(self.menu_img, ty, mn.shortcut, settings.text_color, u'Nokia Sans SemiBold S60', mx-8)
-                text_render(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.shortcut, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
+                text_render(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), mn.shortcut, settings.text_color, (None, self.text_height, FONT_BOLD), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
             if mn.submenu:
                 #self.menu_img.polygon([mx-13,((self.y + 7) + i19),mx-13,((self.y + 19) + i19),mx-7,((self.y + 13) + i19)], fill=settings.text_color)
-                text_render(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), u">", settings.text_color, (None, self.text_height*1.15), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
+                text_render(self.menu_img, (10, self.y + 5 + (i * self.element_size), sx + 10, self.y + (i * self.element_size) + sy + 5, ), u">  ", settings.text_color, (None, self.text_height*1.15, FONT_BOLD), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
             i += 1
 
         if self.sm:
@@ -1643,19 +1776,15 @@ class Menu:
             self.sm.redrawmenu()
         else:
             ui.draw(self.menu_img)
+
     def show(self):
         self.redrawmenu()
 
 class SubMenu:
     def __init__(self, menu, mn , image):
-        # if ui.landscape:
-            # self.bimg = Image.new(ui.landscape_size)
-            # self.submenu_img=Image.new(ui.landscape_size)
-        # else:
         self.bimg = Image.new(ui.display_size)
         self.submenu_img=Image.new(ui.display_size)
-        # if image!=None: self.bimg.blit(image)
-        # else: self.bimg.blit(img)
+
         self.bimg.blit(image)
         self.mn = mn
         self.index = 0
@@ -1663,22 +1792,32 @@ class SubMenu:
         self.num = len(self.menuarr)
         self.page=0
         self.elem_page=6
-        # for i in self.menuarr:
-            # t=mn.title+mn.shortcut+u"   "
-            # self.xl=self.bimg.measure_text(text,'dense')[1]
+
     def open(self):
         self.element_size = (grafica.mn_il.size[1] + 5)
         self.element_size2 = grafica.mn_il.size[1]
-        self.text_height = grafica.mn_il.size[1] * .75
-        self.lenght = 112
-        #self.elem_page =  int (ui.display_size[1] * .75 / self.element_size)# / 29
-        #mx,my=self.menu_img.size
+        self.text_height = grafica.mn_il.size[1] * .60
+        self.lenght = (grafica.mn_il.size[0] + 4)
+
+        #Calculation of the submenu x size
+        # for e in self.menuarr:
+            # x1 = self.submenu_img.measure_text(e.title, (None, self.text_height))[1]
+            # if x1>self.lenght:
+                # self.lenght = x1
+        # self.lenght += 10
+        
+        self.elem_page =  int(ui.display_size[1] * .60 / self.element_size)
+        mx,my=self.submenu_img.size
+        
+        self.x1 = mx - self.lenght
+        #self.text_rect = (self.x1 + 4, )
+
+        if self.num>=self.elem_page:
+            self.y = skinUI.softkeys_rect[1] - (self.element_size * self.elem_page)
+        else:
+            self.y = skinUI.softkeys_rect[1] - (self.element_size * self.num)
         self.cbind()
         self.show()
-        # if self.num>=self.elem_page:
-            # self.y = (my-20) - (self.element_size * self.elem_page)
-        # else:
-            # self.y = (my-20) - (self.element_size * self.num)
     def close(self):
         self.cunbind()
         self.mn.reopen()
@@ -1736,31 +1875,35 @@ class SubMenu:
         ui.unbindall()
     def redrawmenu(self):
         mx,my=self.submenu_img.size
-        if self.num>=self.elem_page:
-            y = (my - 22) - (20 * self.elem_page)
-        else:
-            y = (my - 22) - (20 * self.num)
+        sx,sy = grafica.mn_il.size
+        # if self.num>=self.elem_page:
+            # y = (my - 22) - (20 * self.elem_page)
+        # else:
+            # y = (my - 22) - (20 * self.num)
         y1 = my - 16
-        x1 = mx - self.lenght
+        #x1 = mx - self.lenght
         self.submenu_img.blit(self.bimg)
-        self.submenu_img.blit(grafica.bg_img, target = (x1,y), source = (x1,y,mx-2,y1))
-        #self.submenu_img.polygon([(x1,y),(172,y),(172,y1-2),(x1,y1-2)],outline=settings.window_border,width=1)
-        self.submenu_img.rectangle([(x1,y),(mx-4,y1-2)],outline=settings.window_border,width=1)
-        self.submenu_img.blit(grafica.mn_il, target = (x1+4, ((y + 5) + (self.index * 19))), mask=grafica.mn_i_maskl)
-        #percent=self.index/float(self.num-1)*100.0
-        # lbar=int(float(y-7)/self.num)#(y-7)/100.0*percent
+        self.submenu_img.blit(grafica.bg_img, target = (self.x1,self.y), source = (self.x1,self.y,mx-2,y1))
+
+        self.submenu_img.rectangle([(self.x1,self.y),(mx-4,y1-2)],outline=settings.window_border,width=1)
+        self.submenu_img.blit(grafica.mn_il, target = (self.x1, (self.y + 5) + (self.index * 19)), mask=grafica.mn_i_maskl)
+
         if self.num>self.elem_page:
-            lbar=float(y1-y-7)/(self.num-self.elem_page+1)
+            lbar=float(y1-self.y-7)/(self.num-self.elem_page+1)
             ybar=(self.page+1)*lbar
-            self.submenu_img.line((mx-6,y+3,mx-6,y1-5),settings.scroll_bar_bg_color1)
-            self.submenu_img.rectangle((mx-7,y+3+ybar-lbar,mx-4,y+3+ybar),outline=settings.scroll_bar_main_color1,fill=settings.scroll_bar_main_color2)
+            self.submenu_img.line((mx-6,self.y+3,mx-6,y1-5),settings.scroll_bar_bg_color1)
+            self.submenu_img.rectangle((mx-7,self.y+3+ybar-lbar,mx-4,self.y+3+ybar),outline=settings.scroll_bar_main_color1,fill=settings.scroll_bar_main_color2)
+
         i = 0
         for mn in self.menuarr[self.page:self.page+self.elem_page]:
-            self.submenu_img.text((mx-104,(y + 17) + (i * 19)), mn.title, settings.text_color)
+            #self.submenu_img.text((mx-104,(y + 17) + (i * 19)), mn.title, settings.text_color)
+            text_render(self.submenu_img, (self.x1, self.y + 5 + (i * self.element_size), mx - 4, self.y + (i * self.element_size) + sy + 5, ), mn.title, settings.text_color, (None, self.text_height), ALIGNMENT_MIDDLE, 1)
             if (mn.shortcut != None):
-                text_right(self.submenu_img, (y + 17) + (i * 19) , mn.shortcut, settings.text_color, u'Nokia Sans SemiBold S60', mx-10)
+                #text_right(self.submenu_img, (y + 17) + (i * 19) , mn.shortcut, settings.text_color, u'Nokia Sans SemiBold S60', mx-10)
+                text_render(self.submenu_img, (self.x1, self.y + 5 + (i * self.element_size), my - 4, self.y + (i * self.element_size) + sy + 5, ), mn.shortcut, settings.text_color, (None, self.text_height, FONT_BOLD), ALIGNMENT_MIDDLE|ALIGNMENT_RIGHT)
             i += 1
         ui.draw(self.submenu_img)
+
     def show(self):
         self.redrawmenu()
 
@@ -1796,7 +1939,7 @@ class GrafList:
 
         s.list_image = Image.new(ui.display_size)
         
-        s.scroll_bar.position = (ui.display_size[0]-20,20,ui.display_size[1]-41,15)
+        s.scroll_bar.position = skinUI.scrollbar_rect#(ui.display_size[0]-20,20,ui.display_size[1]-41,15)
         s.scroll_bar.orientation = 'vertical'
         s.scroll_bar.max_page = s.elem_page
         s.scroll_bar.init_values()
@@ -2029,7 +2172,7 @@ class GrafList:
         lx,ly=s.list_image.size
         elen=len(s.elements)
         s.list_image.blit(grafica.bg_img)
-        if elen==0:
+        if not s.elements:
             #No elements, display a message
             lines=wrap_text_to_array(s.no_data,'dense',lx-8)
             yi=int(ly/2-len(lines)*6) #int(ly/2-len(lines)/2*12)
@@ -2082,8 +2225,8 @@ class GrafList:
                 # q=15 + int(ratio*s.page)
                 # qp=q + int(ratio*s.elem_page)
                 # s.list_image.rectangle((xa,q,xb,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
-                s.scroll_bar.max_value = elen
-                s.scroll_bar.current = s.page
+                s.scroll_bar.max_value = elen - 1
+                s.scroll_bar.current = s.page - 1
 
                 s.scroll_bar.draw(s.list_image)
 
@@ -3600,11 +3743,14 @@ class mini_viewer:
         if s.caricato:
             ui.canvas_image.blit(luminosita(s.img,s.brightness))
             if info:
-                text_cut(ui.canvas_image,(2,12),s.name,fill=0x00ff00)
+                #text_cut(ui.canvas_image,(2,12),s.name,fill=0x00ff00)
+                #lines_render(ui.canvas_image, (2,None), s.name, 0x00ff00, None, ALIGMENT_UP, 1
+                text_render(ui.canvas_image, (2,None), s.name, 0x00ff00, None, ALIGNMENT_UP, 1)
                 ui.canvas_image.text((3,24),_(u"Luminosità: %i %%")%s.brightness,fill=0x00ff00)
                 ui.canvas_image.text((3,36),_(u"Zoom: %i")%s.zoom,fill=0x00ff00)
                 if s.images_in_dir:
-                    text_center(ui.canvas_image,y-4,u"%i / %i"%(s.index+1,len(s.images_in_dir)),0x00ff00)
+                    text_render(ui.canvas_image, (0, y), u"%i / %i"%(s.index+1,len(s.images_in_dir)), 0x00ff00, None, ALIGNMENT_CENTER)
+                    #text_center(ui.canvas_image,y-4,u"%i / %i"%(s.index+1,len(s.images_in_dir)),0x00ff00)
         else:
             #ui.canvas_image.text((5,20),_(u"Caricamento ..."),fill=(255,255,255),font=(None,16,16))
             #text_center(ui.canvas_image, y/2, _(u"Caricamento ..."), (255,255,255), (None,16,16))
@@ -3868,9 +4014,8 @@ class lrc:
                     # return s.L[s.L.index((tempo,testo))-1][1] #Riga prima
 
 class mini_player:
-    def __init__(s,fi,end_callback=None,playlist=None):
-        if not fi:
-            return
+    def __init__(s, fi, end_callback = None, playlist = None):
+        #TODO: fade in-out
         try:
             if explorer.is_playing:
                 explorer.is_playing.restore()
@@ -3885,19 +4030,19 @@ class mini_player:
         except:
             appuifw.note(_(u"Impossibile avviare %s.\nReinstallare l'applicazione o il modulo.")%"player")
             return
-        s.t=e32.Ao_timer()
-        s.main=None
-        s.filename=None
-        s.file=fi
-        s.end_callback=end_callback
-        s.audio_index=0
-        s.audio_list=[]
-        s.playlist_name=None
+        s.t = e32.Ao_timer()
+        s.main = None
+        s.filename = None
+        s.file = fi
+        s.end_callback = end_callback
+        s.audio_index = 0
+        s.audio_list = []
+        s.playlist_name = None
         if playlist:
             s.playlist_name=os.path.basename(s.file)
             try:
                 if playlist==".pyl":
-                    pyl=ur(open(ur(s.file)).read())
+                    pyl = ur(open(ur(s.file)).read())
                     for path,name in eval(pyl):
                         s.audio_list.append(os.path.normpath(path))
                 elif playlist==".m3u":
@@ -3922,69 +4067,61 @@ class mini_player:
             except:
                 s.audio_list=[s.file]
                 s.audio_index=0
-        #s.language()
-        s.audio_running=1
-        s.not_hidden=1
-        s.changing=0
-        #s.backlight_on=0
-        s.explorer_update=0
+
+        s.audio_running = 1
+        s.not_hidden = 1
+        s.changing = 0
+        s.explorer_update = 0
+
         s.load_audio()
         s.set_ui()
         s.screen_change(1)
         s.vol_bar = StatusBar(s.set_vol)
         s.vol_bar.position = (100,200,200,10)
         s.vol_bar.orientation = 'vertical'
-        # s.vol_bar.lenght = 200
-        # s.vol_bar.height = 20
         s.vol_bar.max_value = 10
         s.vol_bar.init_values()
-        
-        
+
         s.seek_bar = StatusBar(s.set_seek)
         s.seek_bar.formatter = long
         s.seek_bar.position = (50,50,200,10)
         #s.seek_bar.max_value = 10
         s.seek_bar.init_values()
         
+        s.touch_control = TouchDriver(skinUI.default_drawable_rect, s.touch_cb)#{MOVE_RIGHT: s.next, MOVE_LEFT, s.previous})
+        
         s.redraw_screen()
         s.canvas_refresh()
         s.bind()
         s.t.after(0.1,s.refresh_ao)
+
     def set_seek(s, v):
-        s.audio_istance.sound_opened.set_position(v)#stop()
-        s.pos=v
-#        s.audio_istance.play_audio(0)
+        s.audio_istance.sound_opened.set_position(v)
+
     def set_vol(s, v):
         s.audio_istance.sound_opened.set_volume(v)
         s.audio_istance.volume = v
-        #s.canvas_refresh()
+
     def hide(s):
-        explorer.is_playing=s
-        s.not_hidden=0
+        explorer.is_playing = s
+        s.not_hidden = 0
         if s.end_callback:
             if s.playlist_name:
                 s.end_callback(s.playlist_name)
             else:
                 s.end_callback(s.filename)
+
     def restore(s):
-        explorer.is_playing=None
-        s.not_hidden=1
+        explorer.is_playing = None
+        s.not_hidden = 1
         s.set_ui()
         s.screen_change(1)
         s.redraw_screen()
         s.canvas_refresh()
         s.bind()
+
     def esci(s):
         s.audio_running=0
-        
-        # volume=settings.volume
-        # for i in xrange(settings.volume):
-            # try:
-                # s.audio_istance.vol_down()
-            # except: pass
-            # e32.ao_sleep(0.07)
-        # settings.volume=volume
-        
         try:
             s.audio_istance.stop()
             s.audio_istance.close()
@@ -3994,38 +4131,48 @@ class mini_player:
         if s.end_callback:
             if s.playlist_name: s.end_callback(s.playlist_name)
             else: s.end_callback(s.filename)
+
     def refresh_ao(s):
         try:
-            state,volume,duration,current_position=s.audio_istance.getstate()
+            state,volume,duration,current_position = s.audio_istance.getstate()
             s.vol_bar.actual_value = volume
             s.seek_bar.max_value = duration
             s.seek_bar.actual_value = current_position
-            settings.volume=volume
-            
-            if duration>10000000:
+            settings.volume = volume
+            #TODO: seek sec value set by user
+            if duration > 10000000:
                 #nei file molto corti altrimenti diventa impossibile il seeking
-                s.audio_istance.sec_rew_ff=int(duration*0.0000001) #int((float(duration)/1000000.0)/100.0*6.0)
+                s.audio_istance.sec_rew_ff = int(duration*0.0000001)
             else:
-                s.audio_istance.sec_rew_ff=1
-            if state==1 and s.audio_istance.in_pause==0:
-                if settings.audio_repeat==0: #Senza ripetizione, alla fine della playlist si ferma
+                s.audio_istance.sec_rew_ff = 1
+            if (state == 1) and (s.audio_istance.in_pause == 0):
+                if settings.audio_repeat == 0: #Senza ripetizione, alla fine della playlist si ferma
                     s.next(0)
-                elif settings.audio_repeat==1 and s.audio_running: #Ripetizione singola canzone
+                elif (settings.audio_repeat == 1) and s.audio_running: #Ripetizione singola canzone
                     s.audio_istance.play_audio(0)
-                elif settings.audio_repeat==2 and s.audio_running: #Ripetizione playlist intera
+                elif (settings.audio_repeat == 2) and s.audio_running: #Ripetizione playlist intera
                     s.next()
         except:
             pass
-        if s.audio_running and ui.focus_state and s.not_hidden:# and (not ui.menuopened):#s.audio_running and ui.focus_state:
+        if s.audio_running and ui.focus_state and s.not_hidden:
             s.redraw_screen()
             s.canvas_refresh()
         if s.audio_running:
             s.t.after(0.1,s.refresh_ao)
+
+    def touch_cb(s, direction):
+        
+        if direction&MOVE_RIGHT:
+            s.next()
+        elif direction&MOVE_LEFT:
+            s.previous()
+
     def bind(s):
         ui.unbindall()
         s.seek_bar.set_touch()
         s.vol_bar.set_touch()
-        ui.bind(63557,lambda: s.audio_istance.pause())
+        s.touch_control.start()
+        ui.bind(EScancodeSelect,lambda: s.audio_istance.pause())
         ui.bind(EStdKeyIncVolume,lambda: s.audio_istance.vol_up())
         ui.bind(EStdKeyDecVolume,lambda: s.audio_istance.vol_down())
         if ui.landscape==1:
@@ -4049,9 +4196,12 @@ class mini_player:
             ui.bind(EScancodeRightArrow,lambda: s.audio_istance.ff())
             ui.bind(EScancode1,s.previous)
             ui.bind(EScancode3,s.next)
+
     def set_ui(s):
+        #TODO: backlight on if lyrics
+        #TODO: song info popup
+        #TODO: help popup
         ui.save_state()
-        #ui.focus_cb=s.focus
         ui.mode_callback=s.screen_change
         ui.menu.menu([#(u"Modifica tag",[lambda: id3tag_edit_form(s.file,s.leggi_tags)]),
                     (_(u"Modalità riproduzione"),[(_(u"Normale"),lambda: settings.set("audio_repeat","0")),
@@ -4075,7 +4225,8 @@ class mini_player:
                     ])
         ui.right_key=[s.esci,_(u'Indietro')]
         ui.left_key=[None,_(u'Menu')]
-    def load_audio(s,play_init=1):
+
+    def load_audio(s, play_init = 1):
         s.leggi_tags() #Tag ID3, LRC (Lyrics se presenti) e nome file
         try:
             s.audio_istance.stop()
@@ -4083,182 +4234,123 @@ class mini_player:
         except:
             pass
         try:
-            s.audio_istance=s.player(audiofile=os.path.normpath(s.audio_list[s.audio_index]),volume=settings.volume)
+            s.audio_istance = s.player(audiofile=os.path.normpath(s.audio_list[s.audio_index]),volume=settings.volume)
             if play_init:
                 s.audio_istance.play_audio()
         except Exception, e:
             appuifw.note(unicode(e))
-            #return
-    # def esec(s,cmd):
-        # exec(cmd
+
     def leggi_tags(s):
-        fn=s.audio_list[s.audio_index]
-        s.title=u""
-        s.album=u""
-        s.artist=u""
-        s.year=u""
-        s.genre=u""
-        s.tags=None
-        #s.tag=0
+        fn = s.audio_list[s.audio_index]
+        s.title = u""
+        s.album = u""
+        s.artist = u""
+        s.year = u""
+        s.genre = u""
+        s.tags = None
         ext=os.path.splitext(fn)[1].lower()
         s.filename=os.path.basename(fn)
         try:
             #'Titolo':title, 'Artista':artist, 'Album':album, 'Anno':year,'Commento':comment,'Genere':genere
-            if ext==u".mp3":
+            if ext == u".mp3":
                 import id3
-                s.tags=id3.getID3(ur(fn))
-            elif ext==u".ogg":
+                s.tags = id3.getID3(ur(fn))
+            elif ext == u".ogg":
                 import oggtag
-                s.tags=oggtag.readOggTag(ur(fn))
-            #else: pass
+                s.tags = oggtag.readOggTag(ur(fn))
         except:
             pass
+
         if s.tags:
-            s.title=s.tags["Titolo"]
-            s.album=s.tags["Album"]
-            s.artist=s.tags["Artista"]
-            s.year=s.tags["Anno"]
-            s.genre=s.tags["Genere"]
-        #    s.tag=1
+            s.title = s.tags["Titolo"]
+            s.album = s.tags["Album"]
+            s.artist = s.tags["Artista"]
+            s.year = s.tags["Anno"]
+            s.genre = s.tags["Genere"]
+
         try:
-            s.lyric=lrc('%s.lrc'%ur(os.path.splitext(fn)[0]))
-        except:# Exception,e:
-            s.lyric=None#lrc(None)
-        #try:
-        # except:
-            # s.filename=""
+            s.lyric = lrc('%s.lrc'%ur(os.path.splitext(fn)[0]))
+        except:
+            s.lyric=None
+
     def create_playlist(s):
         import m3u
-        name=appuifw.query(_(u"Nome playlist"),"text",u"Playlist")
+        name = appuifw.query(_(u"Nome playlist"),"text",u"Playlist")
         if name:
             try:
                 m3u.write_playlist(os.path.join(explorer.dir,"%s.m3u"%ur(name)),s.audio_list)
                 appuifw.note(_(u"Playlist %s scritta correttamente!")%name)
-            except:# pass# Exception,e:
+            except:
                 appuifw.note(_(u"Errore nella creazione della playlist."),'error')
-                #print str(e)
-        s.explorer_update=1
-    def scansiona_dir(s,d=None):
-        sng=[]
-        eu=ext_util
-        exts=eu.audioextensions
+
+        s.explorer_update = 1
+
+    def scansiona_dir(s, d = None):
+        sng = []
+        eu = ext_util
+        exts = eu.audioextensions
         if d:
-            directory=to_unicode(os.path.normpath(d))
-            files=os.listdir(directory)
+            directory = to_unicode(os.path.normpath(d))
+            files = os.listdir(directory)
             for file in files:
-                file=to_unicode(file)
-                ext=eu.splitext(file).lower()
+                file = to_unicode(file)
+                ext = eu.splitext(file).lower()
                 if ext in exts:
                     sng.append(os.path.join(directory,file))
         else: 
             for elem in explorer.content_of_dir:
-                f=to_unicode(elem[0])
-                ext=eu.splitext(f).lower()
+                f = to_unicode(elem[0])
+                ext = eu.splitext(f).lower()
                 if ext in exts:
                     sng.append(f)
         return sng
-    # def scansiona_dir(s,d=None):
-        # imgs=[]
-        # if d==None:
-            # for elem in explorer.content_of_dir:
-                # try:
-                    # f=ru(elem[0])
-                    # ext=(os.path.splitext(f)[1]).lower()
-                    # if ext in ext_util.audioextensions: imgs.append(os.path.normpath(f))
-                # except Exception, e:
-                    # print str(e)
-        # else: 
-            # directory=os.path.normpath(d)
-            # files=os.listdir(directory)
-            # for file in files:
-                # ext=(os.path.splitext(file)[1]).lower()
-                # if ext in ext_util.imgextensions: imgs.append(os.path.join(ru(directory),ru(file)))#imgs.append(os.path.normpath("%s\\%s"%(directory.decode("utf-8"),file.decode("utf-8"))))
-        # return imgs
-    #def language(s):
-        #s.artist_text="Artista"
-        #s.title_text="Titolo"
-        #s.album_text="Album"
-        #s.year_text="Anno"
-        #s.comment_text="Commento"
-        #s.genre_text="Genere"
-        #s.songs_text=u"%s di %s"
-        #s.non_tag_text="Nessun tag presente"
-    def next(s,user=1):
-        if (not s.audio_running) or s.changing: return
-        #if not s.audio_running: return
-        #if s.changing: return
-        if settings.audio_repeat==0 and (len(s.audio_list)-1==s.audio_index) and (not user): return
-        s.changing=1
+
+    def next(s,user = 1):
+        if (not s.audio_running) or s.changing:
+            return
+        if settings.audio_repeat==0 and (len(s.audio_list)-1==s.audio_index) and (not user):
+            return
+        s.changing = 1
         if settings.audio_shuffle:
-            s.audio_index=random.randint(0,len(s.audio_list)-1)%len(s.audio_list)
+            s.audio_index = random.randint(0,len(s.audio_list)-1)%len(s.audio_list)
         else:
-            s.audio_index=(s.audio_index+1)%len(s.audio_list)
-        #s.file=s.audio_list[s.audio_index]
+            s.audio_index = (s.audio_index+1)%len(s.audio_list)
+
         s.load_audio()
         s.changing=0
-        # try:
-            # s.audio_istance.stop()
-            # s.audio_istance.close()
-        # except: pass
-        # s.audio_istance=s.player.player(audiofile=os.path.normpath(s.file),volume=settings.volume)
-        #s.leggi_tags()
-        #s.audio_istance.play_audio()
+
     def previous(s):
-        if (not s.audio_running) or s.changing: return
-        #if : return
-        #if not s.audio_index: return
-        s.changing=1
-        #s.audio_index-=1
+        if (not s.audio_running) or s.changing:
+            return
+        s.changing = 1
+
         if settings.audio_shuffle:
-            s.audio_index=(random.randint(0,len(s.audio_list)-1))%len(s.audio_list)
+            s.audio_index = (random.randint(0,len(s.audio_list)-1))%len(s.audio_list)
         else:
-            s.audio_index=(s.audio_index-1)%len(s.audio_list)
-        #s.file=s.audio_list[s.audio_index]
+            s.audio_index = (s.audio_index-1)%len(s.audio_list)
+
         s.load_audio()
         s.changing=0
-        # try:
-            # s.audio_istance.stop()
-            # s.audio_istance.close()
-        # except: pass
-        # s.audio_istance=s.player.player(audiofile=os.path.normpath(s.file),volume=settings.volume)
-        # s.leggi_tags()
-        # s.audio_istance.play_audio()
-    # def ms_to_hh_mm(s,ms):
-        # try:
-            # num=ms/1000000
-            # min=str(num/60)
-            # sec=str(num%60)
-            # if len(min)<2:
-                # min="0"+min
-            # if len(sec)<2:
-                # sec="0"+sec
-            # return "%s:%s" % (str(min),str(sec))
-        # except:
-            # return "00:00"
-    def ms_to_hh_mm(s,ms):
+
+    def ms_to_hh_mm(s, ms):
         num=ms/1000000
         return u"%02i:%02i" % (num/60,num%60)
-    def screen_change(s,at_init=0):
-        # if ui.landscape:
-            # del s.main
-            # s.main=Image.new(ui.landscape_size)
-        # else:
-            # del s.main
+
+    def screen_change(s, at_init = 0):
+
         s.main = None
         s.main=Image.new(ui.display_size)
-        # elif ui.landscape==2:
-            # del s.main
-            # s.main=Image.new(ui.landscape_size)
         if not at_init:
             s.bind()
             s.redraw_screen()
             s.canvas_refresh()
+
     def redraw_screen(s):
         s.main.blit(grafica.bg_img)
         try:
-            state,volume,duration,current_position=s.audio_istance.getstate()
+            state,volume,duration,current_position = s.audio_istance.getstate()
         except:
-            state,volume,duration,current_position=0,0,0,0
+            state,volume,duration,current_position = 0,0,0,0
         #text_cut(s.main, (2,13) , u'%s' % (s.filename), settings.text_color, None)
         text_render(s.main, (2, None), u'%s' % (s.filename), settings.text_color, None, ALIGNMENT_UP, 1)
         if s.tags:
@@ -4275,7 +4367,6 @@ class mini_player:
                     for i in wrap_text_to_array(tt, 'dense', s.main.size[0]):
                         text_center(s.main,80+(12*y),to_unicode(i),settings.lyrics_color,'dense')
                         y+=1
-                    #if s.backlight_on: e32.reset_inactivity()
             except Exception,e:
                 print str(e)
         try:
@@ -4284,7 +4375,6 @@ class mini_player:
         except:
             x_per = 6
         if ui.landscape:
-         #(img,y,text,color=(0,0,0),font=None,x=None):
             text_right(s.main, 148, u'%s' % (s.ms_to_hh_mm(duration)), settings.text_color, "legend", 106)
             s.main.text((6,148),u'%s' % (s.ms_to_hh_mm(current_position)), settings.text_color, "legend")
             s.main.text((6,138),_(u"%s di %s")%(s.audio_index+1,len(s.audio_list)), settings.text_color, "legend")
@@ -4311,9 +4401,12 @@ class mini_player:
             s.main.rectangle((x,y,x+10,y+9),settings.text_color)
             for i in [(x+2,y+2),(x+2,y+6),(x+7,y+6),(x+7,y+2)]:
                 s.main.point(i, settings.text_color)
+
     def canvas_refresh(s):
-        if ui.menuopened: ui.menu.update_background(s.main)
-        else: ui.draw(s.main)
+        if ui.menuopened:
+            ui.menu.update_background(s.main)
+        else:
+            ui.draw(s.main)
 
 class text_viewer:
     def __init__(s, file = None, text = u"", end_callback = None, line_sep = u"\r\n", title = u"", read_only=0):
@@ -4338,17 +4431,19 @@ class text_viewer:
         s.text_lines = []
         s.line_no = 0
         s.end_callback = end_callback
-        s.x = 5
-        s.min_x = s.x
-        s.y = 30
+        # s.x = 5
+        # s.text_width = 164
+        # s.min_x = s.x
+        #s.y = 30
         s.first_line = 0
-        s.end_line = 10
-        s.scroll_offset = 5
+        # s.end_line = 10
+        #s.scroll_offset = 5
         s.line_query = 1
-        s.VScrollbar = ScrollBar(s.goto_line)
+        s.VScrollbar = ScrollBar(lambda x: s.goto_line(x-1))
         s.VScrollbar.orientation = 'vertical'
         # s.HSrollbar = Scrollbar()
         # s.HScrollbar = 'horizontal'
+        s.screen_change(1)
         if s.text_init(s.line_sep):
             s.body_init()
     #TODO: file position saving
@@ -4375,15 +4470,24 @@ class text_viewer:
                     ]
         ui.menu.menu(s.menu)
     def screen_change(s,at_init = 0):
+        dx, dy = ui.display_size
         old = ui.landscape
         if ui.landscape:
             s.max_lines=8
         else:
             s.max_lines=10
+        
+        #s.max_lines = 
         s.end_line = s.max_lines
         s.VScrollbar.max_page = s.max_lines
-        s.VScrollbar.position = (ui.display_size[0]-20,20,ui.display_size[1]-41,15)
+        s.VScrollbar.min_value = 1
+        s.VScrollbar.position = skinUI.scrollbar_rect#(dx-20,20,dy-41,15)
         s.VScrollbar.init_values()
+        s.x = int(round( dx / 100.0 * 3))
+        s.y = skinUI.title_rect[3]
+        s.min_x = s.x
+        s.scroll_offset = s.x
+        s.text_width = skinUI.scrollbar_rect[0] - s.x - s.x
         s.timg = Image.new(ui.display_size)
         if not at_init:
             #Se si cambia risoluzione ed è attiva l'impostazione di adattamento a schermo, bisogna riadattare tutto il testo
@@ -4412,17 +4516,17 @@ class text_viewer:
             s.line_no = len(s.text_lines)
             return 1
         elif settings.text_viewer_view_mode==1 or s.read_only:
-            #from akntextutils import wrap_text_to_array
             lines=s.text.split(line_sep)
             for line in lines:
-                if ui.landscape:
-                    t=wrap_text_to_array(line,'dense',192)
-                else:
-                    t=wrap_text_to_array(line,'dense',164)
+                t = wrap_text_to_array(line, 'dense', s.text_width)
+                # if ui.landscape:
+                    # t=wrap_text_to_array(line,'dense',192)
+                # else:
+                    # t=wrap_text_to_array(line,'dense',164)
                 if t!=():
                     s.text_lines+=t
                 else:
-                    s.text_lines.append("")
+                    s.text_lines.append(u"")
             s.line_no = len(s.text_lines)
             del lines
             return 1
@@ -4431,36 +4535,28 @@ class text_viewer:
             s.text_init(line_sep)
 
     def load(s):
-        #s.iu=0
-        # if s.file == None:
-            # raise IOError('Nessun file!')
         f = open(s.file, 'r')
         text = f.read()
         f.close()
         if text.startswith('\xff\xfe') or text.startswith('\xfe\xff'): #Se è unicode (utf16)
             enc = 'utf16' #Codifica x l'unicode
             text = text.decode(enc)
-            #s.iu=1
         elif text.startswith('\xef\xbb\xbf'): #Se è utf8
             enc = 'utf8'
             text = text.decode(enc)
-            #s.iu=1
         else:
             for enc in __supported_encodings__:
                 try:
                     text = text.decode(enc).replace(u"\x00","")
-                    #s.iu=0
                     break
                 except UnicodeError:
                     pass
             else:
                 raise UnicodeError
-        #line_sep=
         return text.replace(u'\r\n', u'\u2029').replace(u'\n', u'\u2029') , enc , len(text) , u'\u2029'
 
     def esci(s):
         del s.text,s.text_lines,s.line_no
-        #ui.reload_state()
         if s.read_only:
             s.end_callback(None,s.old_ui)
         else:
@@ -4475,8 +4571,10 @@ class text_viewer:
             s.text_redraw()
     def set_orizzontal_position(s,text):
         if (settings.text_viewer_view_mode!=1) and (not s.read_only):
-            try: s.x=-(s.timg.measure_text(text,'dense')[1])
-            except: pass
+            try:
+                s.x=-(s.timg.measure_text(text,'dense')[1])
+            except:
+                pass
     def cerca_parola(s):
         #if s.line_no<=10:
             #user.note(u"Testo troppo corto!\nLa parola è nella prima pagina :)")
@@ -4499,7 +4597,6 @@ class text_viewer:
             index+=1
         user.note(_(u"Ricerca completa: fine del testo raggiunta."),_(u"Ricerca testo"))
     def body_init(s):
-        s.screen_change(1)
         s.old_ui=ui.get_state()
         ui.mode_callback=s.screen_change
         ui.right_key=[s.esci,_(u'Indietro')]
@@ -4545,8 +4642,8 @@ class text_viewer:
             ui.bind(EScancodeDownArrow,s.pag_giu)
             if not settings.text_viewer_view_mode:
                 if not s.read_only:
-                    ui.bind(EScancodeRightArrow,s.sx)
-                    ui.bind(EScancodeLeftArrow,s.dx)
+                    ui.bind(EScancodeLeftArrow,s.sx)
+                    ui.bind(EScancodeRightArrow,s.dx)
             ui.bind(EScancodeStar, lambda: s.goto_line(s.line_no-1))
             ui.bind(EScancode7, lambda: s.goto_line(0))
             ui.bind(EScancode9, lambda: s.pag_su(s.max_lines))
@@ -4556,32 +4653,14 @@ class text_viewer:
         ui.bind(EScancode1, s.inizio_linea)
         #TODO: key 3 to go a the end of the line
         #TODO: add qwerty specific keys
-    # def pag_giu(s,plus=0,page=0):
-        # if page==1 and s.line_no-s.end_line<=s.max_lines:
-            # s.end_line=s.line_no
-            # s.first_line=s.end_line-s.max_lines
-        # if s.line_no>s.max_lines:
-            # s.first_line+=1+plus
-            # s.end_line+=1+plus
-            # if s.end_line>s.line_no:
-                # s.end_line=s.line_no
-                # s.first_line-=1+plus
-        # s.text_redraw()
     def pag_giu(s,plus=1):
         if s.line_no>s.max_lines:
             if plus+s.end_line>s.line_no:
                 s.end_line=s.line_no
                 s.first_line=s.end_line-s.max_lines
             else:
-            # if page==1 and s.line_no-s.end_line<=s.max_lines:
-                # s.end_line=s.line_no
-                # s.first_line=s.end_line-s.max_lines
-                #
                 s.first_line+=plus
                 s.end_line+=plus
-                # if s.end_line>s.line_no:
-                    # s.end_line=s.line_no
-                    # s.first_line-=s.end_line-s.max_lines#plus
             s.text_redraw()
     def pag_su(s,lines=1):
         if s.line_no>s.max_lines:
@@ -4594,7 +4673,8 @@ class text_viewer:
     def goto_line(s,linea=None):
         if linea==None:
             linea=appuifw.query(_(u"Linea (att:%i,max:%i):")%(s.first_line+1,s.line_no),"number",s.line_query)
-            if not linea: return
+            if not linea:
+                return
             linea-=1
         if s.line_no<=s.max_lines:
             return
@@ -4626,7 +4706,7 @@ class text_viewer:
         i = 0
         for linea in s.text_lines[s.first_line:s.end_line]:
             try:
-                s.timg.text((s.x,s.y+15*(i+1)),unicode(linea),font='dense',fill=settings.text_color)
+                s.timg.text((s.x,s.y+skinUI.text_viewer_font[1]*(i+1)),unicode(linea),font=skinUI.text_viewer_font,fill=settings.text_color)
             except:
                 pass
             i+=1
@@ -4652,53 +4732,56 @@ class text_viewer:
                 # s.timg.polygon((170,14,175,14,175,193,170,193),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2) #Sfondo barra di scorrimento
                 # s.timg.polygon((171,q,174,q,174,qp,171,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
         if s.line_no>s.max_lines:
-            s.VScrollbar.current = s.first_line
+            s.VScrollbar.current = s.first_line + 1
             s.VScrollbar.max_value = s.line_no
             s.VScrollbar.draw(s.timg)
         ui.draw(s.timg)
 
 class id3tag_edit_form:
-    def __init__(s,file,end_callback=None,read_tag=1,title=u"",artist=u"",album=u"",year=0,comment=u"",track=None,genre=255):
-        # if file: s.file=file
-        # else: return
+#The id3 tag editor class, based on appuifw.Form widget
+    def __init__(s, file, end_callback = None, read_tag = 1, title = u"", artist = u"", album = u"", year = 0, comment = u"", track = None, genre = 255):
+
         s.file=file
         try:
             import id3
             s.id3=id3
             del id3
-        except: return
-        s.callback=end_callback
+        except:
+            user.note(_(u"Impossibile avviare %s.\nReinstallare l'applicazione o il modulo.")%"id3")
+            return
+        s.callback = end_callback
         if read_tag:
-            s.tags=s.id3.getID3(s.file) #'Titolo':title, 'Artista':artist, 'Album':album, 'Anno':year,'Commento':comment,'Genere':genere
+            s.tags = s.id3.getID3(s.file) #'Titolo':title, 'Artista':artist, 'Album':album, 'Anno':year,'Commento':comment,'Genere':genere
             if not s.tags:
-                s.title=title
-                s.album=album
-                s.artist=artist
-                s.year=year
-                s.comment=comment
+                s.title = title
+                s.album = album
+                s.artist = artist
+                s.year = year
+                s.comment = comment
                 #s.track=track
-                s.genre=genre
+                s.genre = genre
             else:
-                s.title=s.tags["Titolo"]
-                s.album=s.tags["Album"]
-                s.artist=s.tags["Artista"]
-                s.year=s.tags["Anno"]
+                s.title = s.tags["Titolo"]
+                s.album = s.tags["Album"]
+                s.artist = s.tags["Artista"]
+                s.year = s.tags["Anno"]
                 #if s.year=="-" or s.year=="": s.year="0"
-                try: s.year=int(s.year)
-                except: s.year=0
-                s.comment=s.tags["Commento"]
+                try:
+                    s.year = int(s.year)
+                except:
+                    s.year = 0
+                s.comment = s.tags["Commento"]
                 #s.track=None
-                s.genre=s.tags["Genere"]
+                s.genre = s.tags["Genere"]
         else:
-            s.title=title
-            s.album=album
-            s.artist=artist
-            s.year=year
-            s.comment=comment
+            s.title = title
+            s.album = album
+            s.artist = artist
+            s.year = year
+            s.comment = comment
             #s.track=track
-            s.genre=genre
-    
-        #s.init_body()
+            s.genre = genre
+
     def remove_tags(s):
         if user.query(u"Eliminare tutti i tag esistenti?",u"MP3 Advanced Settings"):
             s.id3.remove_all_tags(s.file)
@@ -4707,11 +4790,15 @@ class id3tag_edit_form:
         s.salvato = 1
     def editor(s):
         appuifw.app.screen="normal"
-        try: appuifw.app.title=u"Modifica tag: %s"%ru(os.path.split(s.file)[1])
-        except: appuifw.app.title=u"Modifica tag: %s"%""
-        generi=map(unicode,s.id3.generi)
-        try: index=generi.index(s.genre)
-        except: index=0
+        try:
+            appuifw.app.title=u"Modifica tag: %s"%to_unicode(os.path.split(s.file)[1])
+        except:
+            appuifw.app.title=u"Modifica tag: %s"%""
+        generi = map(unicode,s.id3.generi)
+        try:
+            index = generi.index(s.genre)
+        except:
+            index = 0
         dati = [
             (_(u"Artista"),'text',s.artist),
             (_(u"Titolo"),'text',s.title),
@@ -4720,45 +4807,43 @@ class id3tag_edit_form:
             (_(u"Commento"),'text',s.comment),
             (_(u"Genere"),'combo',(generi, index)),
            ]
-        flags = appuifw.FFormEditModeOnly+appuifw.FFormDoubleSpaced
+        flags = appuifw.FFormEditModeOnly + appuifw.FFormDoubleSpaced
         fff = appuifw.Form(dati, flags)
-#        appuifw.menu=[]
         fff.save_hook = s.salvataggio
         s.salvato = 0
         fff.execute()
-        #if s.salvato==1:
-        #if appuifw.query(u"Scrivere le nuove informazioni ID3?","query"):
         if s.salvato:
             try:
-                s.artist=(fff[0][2]).encode("latin-1")
-                s.title=(fff[1][2]).encode("latin-1")
-                s.album=(fff[2][2]).encode("latin-1")
-                s.year=int(fff[3][2])
-                s.comment=(fff[4][2]).encode("latin-1")
-                s.genre=int(fff[5][2][1])
+                s.artist = (fff[0][2]).encode("latin-1")
+                s.title = (fff[1][2]).encode("latin-1")
+                s.album = (fff[2][2]).encode("latin-1")
+                s.year = int(fff[3][2])
+                s.comment = (fff[4][2]).encode("latin-1")
+                s.genre = int(fff[5][2][1])
                 s.id3.updateID3(s.file,s.title,s.artist,s.album,s.year,s.comment,None,s.genre)
                 appuifw.note(_(u"Tag salvati con successo."),"conf")
             except:
                 appuifw.note(_(u"Errore nell' aggiornamento dei tag."),"error")
         else:
             appuifw.note(_(u"Modifiche non aggiornate."),"conf")
-        # else:
-            # if appuifw.query(u"Scrivere le nuove informazioni ID3?","query"):
-                # s.id3.updateID3(filename=s.file,title=s.title,artist=s.artist,album=s.album,year=s.year,comment=s.comment,track=1,genre=s.genre)
-            # else: appuifw.note(u"Non salvato.")
+
         appuifw.app.screen="full"
-        if s.callback: s.callback()
+        if s.callback:
+            s.callback()
 
 class info_box:  #Informazioni sui file
-    def __init__(s,file,end_callback=None):
-        if not file: return
+    def __init__(s, file, end_callback=None):
+        if not file:
+            return
         s.main=None
         s.language()
         s.file=os.path.normpath(file)
-        try: s.set_fname(file)
-        except: s.filename=u''
-        s.title_text=u''
-        s.ext=''
+        try:
+            s.set_fname(file)
+        except:
+            s.filename=u""
+        s.title_text=u""
+        s.ext=u""
         s.info_totali=[]
         s.info_extra=[]
         s.len_info=0
@@ -4780,20 +4865,20 @@ class info_box:  #Informazioni sui file
         else:
             ui.canvas_refresh()
     def set_fname(s,fn):
-        s.filename=to_unicode(os.path.split(fn)[1])
+        s.filename = to_unicode(os.path.split(fn)[1])
     def re_init(s):
         s.info_init()
         s.info_redraw()
     def language(s):
-        s.size_text=_(u"Dimensione")
-        s.size2_text=_(u"Dimensione totale")
-        s.size3_text=_(u"Spazio occupato")
-        s.size4_text=_(u"Spazio libero")
-        s.date_text=_(u"Data modifica")
-        s.hour_text=_(u"Ora modifica")
-        s.file_text=_(u"Files totali")
-        s.dirs_text=_(u"Cartelle Totali")
-        s.string_mapping={  'Files':s.file_text,
+        s.size_text = _(u"Dimensione")
+        s.size2_text = _(u"Dimensione totale")
+        s.size3_text = _(u"Spazio occupato")
+        s.size4_text = _(u"Spazio libero")
+        s.date_text = _(u"Data modifica")
+        s.hour_text = _(u"Ora modifica")
+        s.file_text = _(u"Files totali")
+        s.dirs_text = _(u"Cartelle Totali")
+        s.string_mapping = {  'Files':s.file_text,
                             'Langs':_(u"Lingue disponibili"),
                             'Drive':_(u"Disco di destinazione"),
                             'Version':_(u"Versione"),
@@ -4807,11 +4892,11 @@ class info_box:  #Informazioni sui file
                             'MicroEdition-Profile':u"",
                             'MicroEdition-Configuration':u""
                         }
-        s.type_names=[_(u"Non presente"),_(u"Sconosciuto"),_(u"Floppy"),_(u"Hard Disk (MMC)"),_(u"CD-Rom"),_(u"Ram Drive"),_(u"Flash"),_(u"Rom"),_(u"Remoto")]
-        s.media_attr=[0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80]
-        s.media_attr_names=[_(u"Dimensione variabile"),_(u"Doppia densità"),_(u"Formattabile"),_(u"Sola lettura"),_(u"Bloccabile"),_(u"Bloccato"),_(u"Ha una password"),_(u"Legge mentre scrive")]
-        s.drive_attr=[0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80]
-        s.drive_attr_names=[_(u"Locale"),_(u"Rom"),_(u"Rediretta"),_(u"Virtuale"),_(u"Interna"),_(u"Removibile"),_(u"Remota"),_(u"Transazione")]
+        s.type_names = [_(u"Non presente"),_(u"Sconosciuto"),_(u"Floppy"),_(u"Hard Disk (MMC)"),_(u"CD-Rom"),_(u"Ram Drive"),_(u"Flash"),_(u"Rom"),_(u"Remoto")]
+        s.media_attr = [0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80]
+        s.media_attr_names = [_(u"Dimensione variabile"),_(u"Doppia densità"),_(u"Formattabile"),_(u"Sola lettura"),_(u"Bloccabile"),_(u"Bloccato"),_(u"Ha una password"),_(u"Legge mentre scrive")]
+        s.drive_attr = [0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80]
+        s.drive_attr_names = [_(u"Locale"),_(u"Rom"),_(u"Rediretta"),_(u"Virtuale"),_(u"Interna"),_(u"Removibile"),_(u"Remota"),_(u"Transazione")]
     def get_attr(s):
         l=[(_(u"Attributi:"),"")]
         try:
@@ -5098,8 +5183,11 @@ class info_box:  #Informazioni sui file
         try: return name[mccemcn.index((x,y))]
         except: return u"%i,%i"%(x,y) #Se non abbiamo il nome mostra solo mcc mcn
     def get_system_info(s):
-        try: from miso import get_hal_attr
-        except: pass
+        try:
+            from miso import get_hal_attr
+        except:
+            traceback.print_exc()
+            user.note(_(u"Impossibile avviare %s.\nReinstallare l'applicazione o il modulo.")%"msys")
         r = []
         info = [
                 (_(u"IMEI"), "sysinfo.imei()"),
@@ -5120,8 +5208,9 @@ class info_box:  #Informazioni sui file
                 pass
         return r
     def esci(s):
-        del s.main,s.info_totali,s.info_extra
-        if s.end_callback: s.end_callback()
+        #del s.main,s.info_totali,s.info_extra
+        if s.end_callback:
+            s.end_callback()
     def bind(s):
         ui.unbindall()
         if ui.landscape==1:
@@ -5613,23 +5702,6 @@ class gestore_temi:
         ListBox.left_cb=s.exit
         ListBox.sel_cb=s.selection_callback
         ListBox.select_item(n) #Comprende il redraw
-        #else: ListBox.select_item(0)
-    # def zip_tree(zip, dir, asEntry=False):
-        # if asEntry: # dir's name is in the zip file
-            # rd = path.split(dir)[0]
-        # else:       # dir is root in the zip file
-            # rd = dir
-        # dlen = (rd[-1] in ['/','\\']) and len(rd) or len(rd) + 1
-        # if asEntry and dir[-1] not in ['/','\\']:
-            # p = dir + '\\'
-            # zip.writestr(zipinfo(p, dlen), '')
-        # for d, dirs, files in os.walk(dir):
-            # for f in files:
-                # p = path.join(d, f)
-                # zip.write(p, p[dlen:])
-            # for f in dirs:
-                # p = path.join(d, f) + os.sep
-                # zip.writestr(zipinfo(p, dlen), '')
     def create_installer(s):
         if not user.query(_(u"Creare l'installazione per il tema selezionato?\nSarà poi possibile inviarlo ad un dispositivo."),_(u"Gestore temi")):
             return
@@ -5723,8 +5795,10 @@ class gestore_temi:
         # z=ziptools.unzip().extract(path+"\\ui.zip","D:\\winfile_preview")
         # z=ziptools.unzip().extract(path+"\\icons.zip","D:\\winfile_preview")
         try:
-            if ui.landscape: ui.draw(Image.open(path+"\\preview_LS.png"))
-            else: ui.draw(Image.open(path+"\\preview.png"))
+            if ui.landscape:
+                ui.draw(Image.open(path+"\\preview_LS.png"))
+            else:
+                ui.draw(Image.open(path+"\\preview.png"))
         except:
             user.note(_(u"Nessun anteprima disponibile.\nAssicurarsi che nella cartella del tema ci sia il file preview.png"))
             return
@@ -6008,7 +6082,7 @@ class _settings:
         try:
             return _.load("%s\\%s"%(directory.lang_dir,s.lang))
         except:
-            print traceback.print_exc()
+            traceback.print_exc()
             return 0
 
     def save_to_disk(s):
@@ -6888,36 +6962,37 @@ class Translator(object):
         # s.body.add(to_unicode(t))
 
 _ = Translator()
-settings=_settings()
+settings = _settings()
 settings.load_settings()
-ui=_UI()
+ui = _UI()
 ui.body_init()
+skinUI = _SkinUI()
 #konsole.show()
-user=user_messages()
+user = user_messages()
 #konsole(u"Loading graphic resources...")
-grafica=_grafica(ui.screen_size)
+grafica = _grafica(ui.screen_size)
 grafica.boot()
 #konsole(u"Loading settings...")
 settings.load_colors()
-gestione_file=FileManager()
-ext_util=_extensions()
-dataformatter=DataFormatter()
+gestione_file = FileManager()
+ext_util = _extensions()
+dataformatter = DataFormatter()
 dataformatter.time_zone=settings.time_zone
-sys_tools=system_tools()
+sys_tools = system_tools()
 
 settings.load_lang()
 
-main=_main_()
+main = _main_()
 #print "Startup time:",time.time() - t,"sec"
 #del t
-ListBox=GrafList()
-plugins=explorer_plugins()
-explorer=Explorer()
+ListBox = GrafList()
+plugins = explorer_plugins()
+explorer = Explorer()
 main.set()
 main.menu_init()
 explorer.first_boot()
 #This will be called when you press red key (like on NSeries phones) or you exit app from task manager (but not killing it)
-sys.exitfunc=main.quit
+sys.exitfunc = main.quit
 
 print "WinFile StartUp Complete!"
 #konsole(u"WinFile StartUp Complete!")
@@ -6925,7 +7000,7 @@ print "WinFile StartUp Complete!"
 
 if __shell__:
     #Set the application lock instance
-    lock=e32.Ao_lock()
+    lock = e32.Ao_lock()
     #Lock the application without quit to shell until the app is exited
     lock.wait()
     #Restore default output

@@ -1,0 +1,6 @@
+Progressi per l'auto adattamento grafico basato su percentuali e/o dimensione oggetti da visualizzare:
+
+- Menu principale: ok
+- Submenu: 80 %
+- vis testi 70%
+- player 0%
