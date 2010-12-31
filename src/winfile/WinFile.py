@@ -145,19 +145,19 @@ import zipfile
 
 TEST_IMG = Image.new((1,1))
 
-def wrap_text_to_array2(text, font, width):
+# def wrap_text_to_array2(text, font, width):
 
-    lines = []
-    text = text.splitlines()
+    # lines = []
+    # text = text.splitlines()
     
-    for line in text:
+    # for line in text:
 
-        line_out = u""
-        fits = TEST_IMG.measure_text(line, font, width)[2]
+        # line_out = u""
+        # fits = TEST_IMG.measure_text(line, font, width)[2]
             
-        if fits <= 0:
-            lines.append(line)
-            break
+        # if fits <= 0:
+            # lines.append(line)
+            # break
         
         
 
@@ -209,7 +209,7 @@ class StatusBar:
         #s.range = float(abs(s.max_value - s.min_value))
         s.actual_value = 0
         s.step = 1 #default step
-        s.sensitivity = .05 # touch area is 5 % bigger than the bar to increase sensitivity
+        s.sensitivity = .02 # touch area is 5 % bigger than the bar to increase sensitivity
         #Calculation of some values
         s.init_values()
         s.formatter = int #This is important. It is used to round a value to have better ui style
@@ -377,7 +377,7 @@ class ScrollBar:
         s.min_value = 0
         s.max_page = 10
         s.current = 0
-        s.sensitivity = .05 # touch area is 5 % bigger than the bar to increase sensitivity
+        s.sensitivity = .02 # touch area is 5 % bigger than the bar to increase sensitivity
         #Calculation of some values
         #s.init_values()
         s.callback = cb #the function that is called at every user input
@@ -392,7 +392,7 @@ class ScrollBar:
     def touch_event(s, pos):
     
         # !!! values are float !!! Remember it for calculation precision
-        range = float(abs(s.max_value - s.min_value))
+        range = float(abs(s.max_value) + abs(s.min_value))
         if s.orientation == 'vertical':
             unit = abs(pos[1]-s.coords[0][1])
             scale = range / s.rect[1][1]
@@ -435,7 +435,8 @@ class ScrollBar:
     def draw(s, img):
         #Background
         img.rectangle(s.coords, None, s.bg_fill_color)
-        range = float(abs(s.max_value - s.min_value))
+        range = float(abs(s.max_value) + abs(s.min_value))
+        #cur = abs(s.current)
         x,y,l,h=s.position
         if s.orientation == 'vertical':
                 # x = const
@@ -490,7 +491,7 @@ def text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_
         else:
             #Rect
             #TODO: improve calculation...some optimizations
-            x1,y1,x2,y2 = coords
+            x1, y1, x2, y2 = coords
             x = max(x1,x2)-min(x1,x2) #x width
             y = max(y1,y2)-min(y1,y2) #y height
             #in this case initial pos (of the text) is the lower left corner
@@ -525,12 +526,70 @@ def text_render(img, coords, text, fill = 0, font = None, alignment = ALIGNMENT_
         img.text((xf, yf), text, fill, font)
         return (xf, yf), bbox, rpixel, n_chars
 
-def lines_render(img, coords, array, spacing = 1, fill = 0, font = None, alignment = ALIGNMENT_LEFT|ALIGNMENT_DOWN, cut = 0, width = None):
-    x, y = coords
-    for line in array:
-        yf = text_render(img, (x,y), text, fill, font, alignment, cut, width)[0][1]
-        y += yf + spacing
-    return y
+def lines_render(img, coords, array, spacing = 1, fill = 0, font = None, alignment = ALIGNMENT_LEFT|ALIGNMENT_UP, cut = 0, width = None):
+    if not array:
+        return
+    if len(coords)==2:
+        #X,Y
+            x0, y0 = 0,0
+            xf, yf = coords[0:2]
+            x, y = img.size
+            if (xf == None):
+                xf = x
+            if (yf == None):
+                yf = y
+    else:
+            #Rect
+            #TODO: improve calculation...some optimizations
+            x1, y1, x2, y2 = coords
+            x = max(x1,x2) - min(x1,x2) #x width
+            y = max(y1,y2) - min(y1,y2) #y height
+            #in this case initial pos (of the text) is the lower left corner
+            xf, yf = min(x1,x2), max(y1,y2)
+            #First coord of the rect (upper left corner)
+            x0, y0 = min(x1,x2), min(y1,y2)
+
+    if (not width):
+        width = x - xf
+
+    to_draw = []
+    ty = 0
+    
+    for text in array:
+        bbox, rpixel, n_chars = img.measure_text(text, font, width)
+        h = abs(bbox[1]) + abs(bbox[3])
+        ty += (h + spacing)
+        if cut:
+            if (len(text)>n_chars):
+                text = u"%s..."%(text[:n_chars-3])
+        to_draw.append((text, h, bbox, rpixel, n_chars))
+
+    y1 = 0
+    x1 = 0
+ 
+    if (alignment & ALIGNMENT_MIDDLE):
+        y1 = y0 + int(y/2.0 - ty/2.0)
+    elif (alignment & ALIGNMENT_DOWN):
+        y1 = yf
+    elif (alignment & ALIGNMENT_UP):
+        y1 = y0 + to_draw[0][1]
+
+    for line in to_draw:
+        text, h, bbox, rpixel, n_chars = line
+        if (alignment & ALIGNMENT_CENTER):
+            x1 = ((width - rpixel) / 2) + x0 - xf
+        elif (alignment & ALIGNMENT_RIGHT):
+            x1 = x - rpixel + x0
+        if (alignment & ALIGNMENT_DOWN):
+            y1 -= h + spacing
+        else:
+            y1 += h + spacing
+           
+        img.text((x1, y1), text, fill, font)
+
+
+    return y1#, lines
+
 #__author__ = "Mikko Ohtamaa <mikko@redinnovation.com>"
 
 class TextRenderer:
@@ -647,6 +706,8 @@ class _SkinUI:
         s.main_drawable_rect = [0, s.title_rect[3], dx, s.softkeys_rect[1]]
         #The rect of the main scrollbar of the programm
         s.scrollbar_rect = (dx - int(px*3), s.title_rect[3], s.softkeys_rect[1] - s.title_rect[3], int(px*3))
+        # The rect of the draw area without bar
+        #s.area_wobar = 
         
         #   # Fonts #  #
         
@@ -657,6 +718,14 @@ class _SkinUI:
         
         #Image viewer background color
         s.IV_bg_color = 0
+        
+        # TEXT VIEWER #
+        
+        # Start X pos
+        s.TV_x = int(round(px*3))
+        s.TV_text_width = s.scrollbar_rect[0] - s.TV_x - s.TV_x
+        s.text_area_rect = [0, s.title_rect[3], s.scrollbar_rect[0], s.softkeys_rect[1]]
+        s.v_scrollbar_rect = (s.TV_x, s.softkeys_rect[1]-int(px*3), s.TV_text_width, int(px*3))
 
 MOVE_LEFT = 1
 MOVE_RIGHT = 2
@@ -669,7 +738,7 @@ MOVE_DOWNLEFT = MOVE_LEFT|MOVE_DOWN
 MOVE_DOWNRIGHT = MOVE_RIGHT|MOVE_DOWN
 
 class TouchDriver:
-    def __init__(s, rect, callback = None):
+    def __init__(s, rect, callback = None, x_speed = 0.90, y_speed = 0.90):
 
         # Here are set the last coordinates received, None at init
         s.last_coords = None
@@ -677,8 +746,8 @@ class TouchDriver:
         # 1-> full speed (one pixel resolution, immediate movement recognizing)
         # 0-> axis deactivated
         # default value 90 %
-        s.x_speed = 0.90
-        s.y_speed = 0.90
+        s.x_speed = x_speed
+        s.y_speed = y_speed
         # The touchable area
         s.rect = rect
         s.lx = abs(s.rect[0] - s.rect[2])
@@ -694,23 +763,24 @@ class TouchDriver:
 
     def touch_cb(s, coords):
 
-        direction = s.get_direction(coords)
+        direction, x, y = s.get_direction(coords)
         if s.cb:
-            s.cb(direction)
+            s.cb(direction, x, y)
 
     def get_direction(s, coords):
 
         mov = MOVE_NONE
         if coords == None:
-            return mov
+            return mov, 0, 0
         if s.last_coords == None:
             s.last_coords = coords
-            return mov
+            return mov, 0, 0
         x, y = coords
         ox, oy = s.last_coords
 
         #Movement along the X axis
-        if abs(x-ox) > s.dx:
+        xdiff = abs(x-ox)
+        if xdiff > s.dx:
             if (x > ox):
 
                 mov |= MOVE_RIGHT
@@ -719,7 +789,8 @@ class TouchDriver:
 
                 mov |= MOVE_LEFT
         #Movement along the Y axis
-        if abs(y-oy) > s.dy:
+        ydiff = abs(y-oy)
+        if ydiff > s.dy:
         
             if (y > oy):
                 
@@ -730,7 +801,7 @@ class TouchDriver:
                 mov |= MOVE_UP
 
         s.last_coords = coords
-        return mov
+        return mov, xdiff, ydiff
 
 class unzip:
     def extract(self, file, dir):
@@ -1538,7 +1609,7 @@ class _UI:
             return
         if s.menuopened == 0:
             s.prevbindarr = s.bindarr
-            s.touchbindarr = s.prevtouchbindarr
+            s.prevtouchbindarr = s.touchbindarr
             s.menuopened = 1
             s.menu.open()
         else:
@@ -1949,6 +2020,11 @@ class GrafList:
         s.scroll_bar.max_page = s.elem_page
         s.scroll_bar.init_values()
 
+    def touch_select(s, coords):
+        #TODO: todo ;)
+        x, y = coords
+        if y in xrange(0): pass
+
     def screen_change(s):
        # s.elem_page=int(ui.display_size[1]/s.element_size)
         # s.list_image=Image.new(ui.display_size)
@@ -2206,12 +2282,13 @@ class GrafList:
         s.list_image.blit(grafica.bg_img)
         if not s.elements:
             #No elements, display a message
-            lines = wrap_text_to_array(s.no_data, 'dense', lx-8)
-            yi = int(ly/2-len(lines)*6)
-            i = 0
-            for line in lines:
-                text_center(s.list_image, yi+(12*i), line, settings.text_color, 'dense')
-                i += 1
+            lines = wrap_text_to_array(s.no_data, 'dense', lx)
+            lines_render(s.list_image, skinUI.main_drawable_rect, lines, 1, settings.text_color, None, ALIGNMENT_MIDDLE|ALIGNMENT_CENTER)
+            #yi = int(ly/2-len(lines)*6)
+            #i = 0
+            #for line in lines:
+            #    text_center(s.list_image, yi+(12*i), line, settings.text_color, 'dense')
+            #    i += 1
         else:
             selected_element = s.elements[s.position+s.page]
             #text_cut(s.list_image, (3,11) , selected_element.title, settings.path_color)
@@ -4132,7 +4209,7 @@ class mini_player:
         s.seek_bar.init_values()
         
         s.touch_control = TouchDriver(skinUI.main_drawable_rect, s.touch_cb)#{MOVE_RIGHT: s.next, MOVE_LEFT, s.previous})
-        
+
         s.redraw_screen()
         s.canvas_refresh()
         s.bind()
@@ -4472,66 +4549,156 @@ class text_viewer:
             s.file = s.title
             s.file_name = s.title
         s.text_lines = []
-        s.line_no = 0
+        #s.line_no = 0
         s.end_callback = end_callback
+        # How many pixel to add to text height
+        s.spacing = 1
         # s.x = 5
         # s.text_width = 164
         # s.min_x = s.x
         #s.y = 30
-        s.first_line = 0
-        # s.end_line = 10
+        #s.first_line = 0
+        #s.end_line = 10
         #s.scroll_offset = 5
         s.line_query = 1
         s.VScrollbar = ScrollBar(lambda x: s.goto_line(x-1))
         s.VScrollbar.orientation = 'vertical'
+        s.HScrollbar = ScrollBar(lambda x: s.set_x(-x))
+        s.HScrollbar.orientation = 'horizontal'
+        
+        s.touch_control = TouchDriver(skinUI.text_area_rect, s.touch_move, 1, 1)
+        #s.touch_control.x_speed = 0.99
+        #s.touch_control.y_speed = 0.99
         # s.HSrollbar = Scrollbar()
         # s.HScrollbar = 'horizontal'
-        s.screen_change(1)
+        #s.screen_change(1)
         if s.text_init(s.line_sep):
+            s.screen_change(1)
             s.body_init()
     #TODO: file position saving
     # def file_position(s,r=1):
         # fn=directory.data_dir+"\\position.dat"
-    def set_menu(s):
-        if settings.text_viewer_view_mode:
-            mdm=(_(u"Adatta a schermo"),[s.cambia_visualizzazione],_(u"Sì"))
+
+    def load(s):
+        f = open(s.file, 'r')
+        text = f.read()
+        f.close()
+        if text.startswith('\xff\xfe') or text.startswith('\xfe\xff'): #Se è unicode (utf16)
+            enc = 'utf16' #Codifica x l'unicode
+            text = text.decode(enc)
+        elif text.startswith('\xef\xbb\xbf'): #Se è utf8
+            enc = 'utf8'
+            text = text.decode(enc)
         else:
-            mdm=(_(u"Adatta a schermo"),[s.cambia_visualizzazione],_(u"No"))
-        s.menu=[mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
+            for enc in __supported_encodings__:
+                try:
+                    text = text.decode(enc).replace(u"\x00","")
+                    break
+                except UnicodeError:
+                    pass
+            else:
+                raise UnicodeError
+        return text.replace(u'\r\n', u'\u2029').replace(u'\n', u'\u2029') , enc , len(text) , u'\u2029'
+
+    def text_init(s, line_sep):
+    
+        s.text_lines = []
+        
+        s.text = s.text.replace(u"\t",u"    ") #Sostituiamo i tabulatori con 4 spazi (cosi non si vede il quadratino)
+        lines = s.text.split(line_sep)
+        
+        if (settings.text_viewer_view_mode == 0) and (not s.read_only):
+            # No screen wrap
+            s.text_lines = lines#s.text.split(line_sep)
+            #s.line_no = len(s.text_lines)
+#            return 1
+        elif (settings.text_viewer_view_mode == 1) or s.read_only:
+            # Text wrap
+            
+            for line in lines:
+                t = wrap_text_to_array(line, skinUI.text_viewer_font, skinUI.TV_text_width)
+                # if ui.landscape:
+                    # t=wrap_text_to_array(line,'dense',192)
+                # else:
+                    # t=wrap_text_to_array(line,'dense',164)
+                if t!=():
+                    s.text_lines+=t
+                else:
+                    s.text_lines.append(u"")
+      #  del lines
+#            return 1
+        else:
+            # In case of some errors
+            settings.text_viewer_view_mode = 0
+            return s.text_init(line_sep)
+        # Maximum width of the text in the normal (non-wrap) mode
+        s.max_x = 0
+        # The maximum text height
+        s.text_height = 0
+        # Scan every line for these results
+        for line in s.text_lines:
+        
+            bbox, p, n_char = TEST_IMG.measure_text(line, skinUI.text_viewer_font)
+            h = abs(bbox[1]) + abs(bbox[3])
+            if h>s.text_height:
+                s.text_height = h
+            if p>s.max_x:
+                s.max_x = p
+        s.max_x -= skinUI.TV_text_width
+        
+        s.line_no = len(s.text_lines)
+        return 1
+
+    def set_menu(s):
+
+        if settings.text_viewer_view_mode:
+            mdm = (_(u"Adatta a schermo"),[s.cambia_visualizzazione],_(u"Sì"))
+        else:
+            mdm = (_(u"Adatta a schermo"),[s.cambia_visualizzazione],_(u"No"))
+        s.menu = [mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
                     (_(u"Pagina su"),[lambda: s.pag_su(-10)],u"[9]"),(_(u"Pagina giù"),[lambda: s.pag_giu(10,1)],u"[#]"),
                     (_(u"Inizio"),[lambda: s.goto_line(0)],u"[7]"),(_(u"Fine"),[lambda: s.goto_line(s.line_no-1)],u"[*]")
                 ]
-        if ui.landscape==1:
-            s.menu=[mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
+
+        if ui.landscape == 1:
+            s.menu = [mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
                         (_(u"Pagina su"),[lambda: s.pag_giu(10,1)],u"[0]"),(_(u"Pagina giù"),[lambda: s.pag_su(-10)],u"[*]"),
                         (_(u"Inizio"),[lambda: s.goto_line(0)],u"[8]"),(_(u"Fine"),[lambda: s.goto_line(s.line_no-1)],u"[7]")
                     ]
-        elif ui.landscape==2:
-            s.menu=[mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
+        elif ui.landscape == 2:
+            s.menu = [mdm,(_(u"Cerca..."),[s.cerca_parola],u"[5]"),(_(u"Vai a linea..."),[s.goto_line]),
                         (_(u"Pagina su"),[lambda: s.pag_giu(10,1)],u"[0]"),(_(u"Pagina giù"),[lambda: s.pag_su(-10)],u"[#]"),
                         (_(u"Inizio"),[lambda: s.goto_line(0)],u"[7]"),(_(u"Fine"),[lambda: s.goto_line(s.line_no-1)],u"[8]")
                     ]
+
         ui.menu.menu(s.menu)
+
     def screen_change(s,at_init = 0):
         dx, dy = ui.display_size
         old = ui.landscape
-        if ui.landscape:
-            s.max_lines=8
-        else:
-            s.max_lines=10
+        s.timg = Image.new(ui.display_size)
+
+        s.text_dy = (s.text_height + s.spacing)
+        # Start Y pos
+        s.y = skinUI.title_rect[3] + s.text_dy
+        s.x = skinUI.TV_x
+        s.min_x = s.x
+        s.scroll_offset = s.x
         
-        #s.max_lines = 
+        s.max_lines = int( (skinUI.main_drawable_rect[3] - skinUI.title_rect[3]) / float((s.text_height + s.spacing)))
+        s.first_line = 0
         s.end_line = s.max_lines
         s.VScrollbar.max_page = s.max_lines
         s.VScrollbar.min_value = 1
         s.VScrollbar.position = skinUI.scrollbar_rect#(dx-20,20,dy-41,15)
         s.VScrollbar.init_values()
-        s.x = int(round( dx / 100.0 * 3))
-        s.y = skinUI.title_rect[3]
-        s.min_x = s.x
-        s.scroll_offset = s.x
-        s.text_width = skinUI.scrollbar_rect[0] - s.x - s.x
-        s.timg = Image.new(ui.display_size)
+        
+        s.HScrollbar.max_page = skinUI.TV_text_width
+        s.HScrollbar.min_value = - s.min_x
+        s.HScrollbar.max_value = s.max_x# - s.min_x
+        s.HScrollbar.position = skinUI.v_scrollbar_rect#(dx-20,20,dy-41,15)
+        s.HScrollbar.init_values()
+        
         if not at_init:
             #Se si cambia risoluzione ed è attiva l'impostazione di adattamento a schermo, bisogna riadattare tutto il testo
             #Mettiamo a posto la posizione del testo (riga prima e riga ultima)
@@ -4549,7 +4716,8 @@ class text_viewer:
                     s.end_line = s.max_lines
             s.bind()
             s.text_redraw()
-    def text_init(s, line_sep):
+
+    def text_init2(s, line_sep):
         s.text_lines = [] #Prepariamo e puliamo la variabile da cose vecchie.
         # s.first_line = 0
         # s.end_line = s.max_lines
@@ -4577,83 +4745,66 @@ class text_viewer:
             settings.text_viewer_view_mode=0
             s.text_init(line_sep)
 
-    def load(s):
-        f = open(s.file, 'r')
-        text = f.read()
-        f.close()
-        if text.startswith('\xff\xfe') or text.startswith('\xfe\xff'): #Se è unicode (utf16)
-            enc = 'utf16' #Codifica x l'unicode
-            text = text.decode(enc)
-        elif text.startswith('\xef\xbb\xbf'): #Se è utf8
-            enc = 'utf8'
-            text = text.decode(enc)
-        else:
-            for enc in __supported_encodings__:
-                try:
-                    text = text.decode(enc).replace(u"\x00","")
-                    break
-                except UnicodeError:
-                    pass
-            else:
-                raise UnicodeError
-        return text.replace(u'\r\n', u'\u2029').replace(u'\n', u'\u2029') , enc , len(text) , u'\u2029'
-
     def esci(s):
         del s.text,s.text_lines,s.line_no
         if s.read_only:
-            s.end_callback(None,s.old_ui)
+            s.end_callback(None, s.old_ui)
         else:
-            s.end_callback(to_unicode(s.file_name),s.old_ui)
+            s.end_callback(to_unicode(s.file_name), s.old_ui)
+
     def cambia_visualizzazione(s):
-        s.x=s.scroll_offset
-        settings.text_viewer_view_mode=settings.text_viewer_view_mode^1
-        ok=s.text_init(s.line_sep)
+        s.x = s.scroll_offset
+        settings.text_viewer_view_mode = settings.text_viewer_view_mode^1
+        ok = s.text_init(s.line_sep)
         s.set_menu()
         s.bind()
         if ok:
             s.text_redraw()
-    def set_orizzontal_position(s,text):
-        if (settings.text_viewer_view_mode!=1) and (not s.read_only):
-            try:
-                s.x=-(s.timg.measure_text(text,'dense')[1])
-            except:
-                pass
+
+    def set_orizzontal_position(s, text):
+        if (settings.text_viewer_view_mode != 1) and (not s.read_only):
+
+            s.x = -(s.timg.measure_text(text, skinUI.text_viewer_font)[1])
+
     def cerca_parola(s):
-        #if s.line_no<=10:
-            #user.note(u"Testo troppo corto!\nLa parola è nella prima pagina :)")
-            #return
-        parola=appuifw.query(_(u"Parola chiave da cercare:"),"text",settings.text_viewer_search_string)
+
+        parola = appuifw.query(_(u"Parola chiave da cercare:"),"text",settings.text_viewer_search_string)
         if not parola:
             return
-        settings.text_viewer_search_string=parola
-        parola=parola.lower()
-        index=0
+        settings.text_viewer_search_string = parola
+        parola = parola.lower()
+        index = 0
         for i in s.text_lines:
-            pos=i.lower().find(parola)
-            if pos!=-1:
-#                index=s.text_lines.index(i)
+            pos = i.lower().find(parola)
+            if pos != -1:
                 s.goto_line(index)
-                s.set_orizzontal_position(i[0:pos]) #Move orizzontally the text to see the searched word
+                s.set_orizzontal_position(i[0:pos]) #Move orizzontally the text to find the searched word
                 s.text_redraw()
                 if not user.query(_(u"Parola trovata in\n linea %i - colonna %i\nContinuare la ricerca?")%(index+1,pos+1),_(u"Ricerca testo")):
                     break
-            index+=1
+            index += 1
+
         user.note(_(u"Ricerca completa: fine del testo raggiunta."),_(u"Ricerca testo"))
+
     def body_init(s):
-        s.old_ui=ui.get_state()
-        ui.mode_callback=s.screen_change
-        ui.right_key=[s.esci,_(u'Indietro')]
+        s.old_ui = ui.get_state()
+        ui.mode_callback = s.screen_change
+        ui.right_key = [s.esci,_(u'Indietro')]
         if not s.read_only:
             s.set_menu()
-            ui.left_key=[None,_(u'Menu')]
+            ui.left_key = [None,_(u'Menu')]
         else:
             ui.menu.menu([])
-            ui.left_key=[None,u'']
+            ui.left_key = [None,u'']
         s.bind()
         s.text_redraw()
+
     def bind(s):
         ui.unbindall()
         s.VScrollbar.set_touch()
+        s.HScrollbar.set_touch()
+        s.touch_control.start()
+        #ui.bind_touch(EDrag, lambda x: s.touch_move(), skinUI.text_area_rect)
         if ui.landscape==1:
             ui.bind(EScancodeUpArrow,s.pag_su)
             ui.bind(EScancodeLeftArrow,s.pag_giu)
@@ -4693,91 +4844,105 @@ class text_viewer:
             ui.bind(EScancodeHash, lambda: s.pag_giu(s.max_lines))
         #Common keys
         ui.bind(EScancode5, s.cerca_parola)
-        ui.bind(EScancode1, s.inizio_linea)
+        ui.bind(EScancode1, lambda: s.set_x(s.min_x))
+        ui.bind(EScancode3, lambda: s.set_x(-(s.max_x - s.min_x)))
         #TODO: key 3 to go a the end of the line
         #TODO: add qwerty specific keys
+
+    def touch_move(s, d, x, y):
+    
+        if d%MOVE_RIGHT:
+            s.set_x(s.x - x)
+        elif d%MOVE_LEFT:
+            s.set_x(s.x + x)
+        if d%MOVE_UP:
+            s.pag_su()
+        elif d%MOVE_RIGHT:
+            s.pag_giu()
+
     def pag_giu(s,plus=1):
         if s.line_no>s.max_lines:
             if plus+s.end_line>s.line_no:
-                s.end_line=s.line_no
-                s.first_line=s.end_line-s.max_lines
+                s.end_line = s.line_no
+                s.first_line = s.end_line-s.max_lines
             else:
-                s.first_line+=plus
-                s.end_line+=plus
+                s.first_line += plus
+                s.end_line += plus
             s.text_redraw()
+
     def pag_su(s,lines=1):
         if s.line_no>s.max_lines:
-            s.first_line-=lines
-            s.end_line-=lines
+            s.first_line -= lines
+            s.end_line -= lines
             if s.first_line<0:
-                s.end_line=s.max_lines
-                s.first_line=0
+                s.end_line = s.max_lines
+                s.first_line = 0
             s.text_redraw()
-    def goto_line(s,linea=None):
+    def goto_line(s, linea = None):
         if linea==None:
-            linea=appuifw.query(_(u"Linea (att:%i,max:%i):")%(s.first_line+1,s.line_no),"number",s.line_query)
+            linea = appuifw.query(_(u"Linea (att:%i,max:%i):")%(s.first_line+1,s.line_no),"number",s.line_query)
             if not linea:
                 return
-            linea-=1
+            linea -= 1
         if s.line_no<=s.max_lines:
             return
         if (linea+1)>s.line_no:
             user.note(_(u"Linea inesistente!\nMax: %i\nInserito: %i")%(s.line_no,linea+1),_(u"Visualizzatore testi"),-1)
         else:
             if not linea>s.line_no-s.max_lines:
-                s.end_line=linea+s.max_lines
-                s.first_line=linea
+                s.end_line = linea+s.max_lines
+                s.first_line = linea
             else:
-                s.end_line=s.line_no
-                s.first_line=s.line_no-s.max_lines
-            s.line_query=linea+1
+                s.end_line = s.line_no
+                s.first_line = s.line_no-s.max_lines
+            s.line_query = linea+1
             s.text_redraw()
-    def inizio_linea(s):
-        s.x=s.min_x
+
+    def set_x(s, x):
+        # Remember that s.max_x must be a negative number!
+        if (-s.max_x <= x <= s.min_x):
+            s.x = x
         s.text_redraw()
+
     def sx(s):
-        if not s.x==s.min_x:
-            s.x+=s.scroll_offset
-            if (s.x%s.scroll_offset): s.x-=(s.x%s.scroll_offset) #be sure to have the right position
+        if not (s.x == s.min_x):
+            s.x += s.scroll_offset
+            if (s.x%s.scroll_offset):
+                s.x -= (s.x%s.scroll_offset) #be sure to have the right position
             s.text_redraw()
+
     def dx(s):
-        s.x-=s.scroll_offset
+        #s.x -= s.scroll_offset
+        #s.text_redraw()
+        s.x = max(-s.max_x, s.x - s.scroll_offset)
         s.text_redraw()
 
     def text_redraw(s,rect=None):
         s.timg.blit(grafica.bg_img)
+        #lines_render(s.timg, skinUI.main_drawable_rect, s.text_lines[s.first_line : s.end_line], 1, settings.text_color, skinUI.text_viewer_font)
         i = 0
-        for linea in s.text_lines[s.first_line:s.end_line]:
-            try:
-                s.timg.text((s.x,s.y+skinUI.text_viewer_font[1]*(i+1)),unicode(linea),font=skinUI.text_viewer_font,fill=settings.text_color)
-            except:
-                pass
-            i+=1
+        for line in s.text_lines[s.first_line:s.end_line]:
+            s.timg.text((s.x, s.y + (s.text_dy*i)), line, settings.text_color, skinUI.text_viewer_font)
+            i += 1
         if not s.title:
-            text_cut(s.timg,(3,11),to_unicode(s.file_name),settings.path_color,None)
+            text_cut(s.timg, (3,11), to_unicode(s.file_name), settings.path_color, None)
         else:
-            s.timg.text((3,11),to_unicode(s.title),fill=settings.path_color)
+            s.timg.text((3,11), to_unicode(s.title), settings.path_color)
         if not s.title:
-            s.timg.text((3,24),_(u"Codifica: '%s'")%s.codifica,fill=settings.path_color)
-            text_right(s.timg,24,u"%i"%s.total_char,settings.path_color,u"Nokia Sans S60",s.timg.size[0]-8)
-        #s.timg.polygon((170,14,175,14,175,193,170,193),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2)
-        #scroll bars
-        # if ui.landscape:
-            # if s.line_no>s.max_lines: #Barra di scroll laterale
-                # q=15+int(148.0/s.line_no*s.first_line) #5+int(177.0/len(s.file)*s.page)+9
-                # qp=q+int(148.0/s.line_no*s.max_lines)-1
-                # s.timg.polygon((202,14,207,14,207,162,202,162),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2) #Sfondo barra di scorrimento
-                # s.timg.polygon((203,q,206,q,206,qp,203,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
-        # else:
-            # if s.line_no>s.max_lines: #Barra di scroll laterale
-                # q=15+int(177.0/s.line_no*s.first_line) #5+int(177.0/len(s.file)*s.page)+9
-                # qp=1+q+int(177.0/s.line_no*s.max_lines)
-                # s.timg.polygon((170,14,175,14,175,193,170,193),settings.scroll_bar_bg_color1,settings.scroll_bar_bg_color2) #Sfondo barra di scorrimento
-                # s.timg.polygon((171,q,174,q,174,qp,171,qp),settings.scroll_bar_main_color1,settings.scroll_bar_main_color2)
+            text_render(s.timg, skinUI.title_rect, unicode(s.total_char), settings.path_color, (None, int(skinUI.title_rect[3]/2.0)), ALIGNMENT_UP|ALIGNMENT_RIGHT)
+            text_render(s.timg, skinUI.title_rect, to_unicode(s.codifica), settings.path_color, (None, int(skinUI.title_rect[3]/2.0)), ALIGNMENT_DOWN|ALIGNMENT_RIGHT)
+            #s.timg.text((3,24),_(u"Codifica: '%s'")%s.codifica,fill=settings.path_color)
+            #text_right(s.timg,24,u"%i"%s.total_char,settings.path_color,u"Nokia Sans S60",s.timg.size[0]-8)
+        # Scroll Bar (Vertical: line count)
         if s.line_no>s.max_lines:
-            s.VScrollbar.current = s.first_line + 1
-            s.VScrollbar.max_value = s.line_no
+            s.VScrollbar.current = s.first_line
+            s.VScrollbar.max_value = s.line_no + 1
             s.VScrollbar.draw(s.timg)
+            
+        s.HScrollbar.current = - s.x# - s.min_x)
+       # s.VScrollbar.max_value = s.line_no + 1
+        s.HScrollbar.draw(s.timg)
+
         ui.draw(s.timg)
 
 class id3tag_edit_form:

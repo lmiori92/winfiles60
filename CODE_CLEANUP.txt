@@ -1,0 +1,3 @@
+Cose da ricordarsi per la pulizia del codice e ottimizzazione:
+
+- sostituire 'horizontal' e 'vertical' con costanti tipo ORIENTATION_VERTICAL o roba simile

@@ -2,5 +2,5 @@ Progressi per l'auto adattamento grafico basato su percentuali e/o dimensione og
 
 - Menu principale: ok
 - Submenu: 80 %
-- vis testi 70%
+- vis testi 100% (ogni font possibile (grandezza predefinita = 5% dim Y); da verificare prestazioni)
 - player 0%
